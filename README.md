@@ -1,4 +1,4 @@
-![WebHaven](https://raw.githubusercontent.com/Razikus/WebHaven/preview.gif)
+![WebHaven](https://i.imgur.com/rElLKwi.gif)
 
 
 
