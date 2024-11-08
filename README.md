@@ -22,6 +22,13 @@ This will additionally init your session
 
 ```
 
+# Without docker
+
+Download .jar from there
+
+https://github.com/Razikus/WebHaven/releases/
+
+Or build it yourself - ```mvn clean install```
 
 
 ## Prerequisites
