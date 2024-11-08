@@ -1,0 +1,1 @@
+cd public/WebHaven && yarn && yarn run build && cd .. && rm -rf dist && cp -r WebHaven/dist ./dist
