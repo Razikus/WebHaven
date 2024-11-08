@@ -1,3 +1,7 @@
+![WebHaven](https://raw.githubusercontent.com/Razikus/WebHaven/preview.gif)
+
+
+
 # WebHaven
 
 Web-based client for Haven & Hearth that allows you to manage multiple game sessions through a web interface.
