@@ -1,0 +1,267 @@
+<template>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-lg shadow relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex justify-center">
+          <div class="bg-white rounded-lg shadow relative">
+            <div class="relative" style="width: 1100px; height: 1100px;">
+              <canvas id="mapCanvas" class="relative" width="1100" height="1100"
+                      style="width: 1100px; height: 1100px;" @mousemove="handleMouseMove"
+                      @mouseout="hideTooltip" @contextmenu.prevent @mousedown="handleMouseDown"></canvas>
+              <div v-if="hoveredObject"
+                   class="absolute z-10 bg-black bg-opacity-75 text-white p-2 rounded text-sm"
+                   :style="tooltipStyle">
+                <div v-if="hoveredObject.resources">
+                  <div>ID: {{ hoveredObject.id }}</div>
+                  <div>Position: ({{ Math.round(hoveredObject.coordsX) }}, {{
+                      Math.round(hoveredObject.coordsY)
+                    }})
+                  </div>
+                  <div v-for="(resource, index) in hoveredObject.resources" :key="index">
+                    {{ resource.information.name }}
+                  </div>
+                </div>
+                <div v-else>
+                  <div>ID: {{ hoveredObject.id }}</div>
+                  <div>Position: ({{ Math.round(hoveredObject.coordsX) }}, {{
+                      Math.round(hoveredObject.coordsY)
+                    }})
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import {ref, inject, computed, watch, onMounted} from 'vue';
+import {useRoute} from 'vue-router';
+
+const VIEWPORT_SIZE = 1100;
+const PLAYER_SIZE = 5;
+const SCALE = 1;
+const HOVER_RADIUS = 10;
+const route = useRoute();
+const programName = computed(() => route.params.name);
+const {perProgramSpecificData, sendMessage} = inject('websocket');
+
+const hoveredObject = ref(null);
+const tooltipStyle = ref({
+  left: '0px',
+  top: '0px',
+});
+
+const playerPosition = computed(() => {
+  const programData = perProgramSpecificData.value?.[programName.value];
+  if (!programData) {
+    console.warn('No program data available');
+    return {x: 0, y: 0};
+  }
+
+  const playerObj = Object.values(programData).find(obj => {
+    return obj?.isMyself === true &&
+        typeof obj.coordsX === 'number' &&
+        typeof obj.coordsY === 'number';
+  });
+
+  if (!playerObj) {
+    console.warn('Player object not found or has invalid coordinates');
+    return {x: 0, y: 0};
+  }
+
+  return {
+    x: playerObj.coordsX,
+    y: playerObj.coordsY
+  };
+});
+
+const worldToScreen = (worldX, worldY) => {
+  const centerX = VIEWPORT_SIZE / 2;
+  const centerY = VIEWPORT_SIZE / 2;
+  const offsetX = (worldX - playerPosition.value.x) * SCALE;
+  const offsetY = (worldY - playerPosition.value.y) * SCALE;
+  return {
+    x: centerX + offsetX,
+    y: centerY + offsetY
+  };
+};
+const handleMouseDown = (event) => {
+  const canvas = event.target;
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+
+  const worldPos = screenToWorld(x, y);
+  const button = event.button + 1;
+  const modifiers = 0;
+
+  // Send click event through websocket
+  if(hoveredObject.value) {
+    sendMessage("proginput", {
+      program: programName.value,
+      cmdType: 'gobclick',
+      x: Math.round(worldPos.x),
+      y: Math.round(worldPos.y),
+      button: button,
+      modifiers: modifiers,
+      gobId: hoveredObject.value.id,
+    });
+  } else {
+    sendMessage("proginput", {
+      program: programName.value,
+      cmdType: 'click',
+      x: Math.round(worldPos.x),
+      y: Math.round(worldPos.y),
+      button: button,
+      modifiers: modifiers
+    });
+
+  }
+};
+
+const screenToWorld = (screenX, screenY) => {
+  const centerX = VIEWPORT_SIZE / 2;
+  const centerY = VIEWPORT_SIZE / 2;
+  return {
+    x: (screenX - centerX) / SCALE + playerPosition.value.x,
+    y: (screenY - centerY) / SCALE + playerPosition.value.y
+  };
+};
+
+const handleMouseMove = (event) => {
+  const canvas = event.target;
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+
+  const worldPos = screenToWorld(x, y);
+  const programData = perProgramSpecificData.value?.[programName.value];
+
+  if (!programData) return;
+
+  // Find closest object
+  let closest = null;
+  let minDistance = HOVER_RADIUS;
+
+  Object.values(programData).forEach(obj => {
+    if (obj.coordsX != null && obj.coordsY != null) {
+      const screenPos = worldToScreen(obj.coordsX, obj.coordsY);
+      const distance = Math.sqrt(
+          Math.pow(screenPos.x - x, 2) +
+          Math.pow(screenPos.y - y, 2)
+      );
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closest = obj;
+      }
+    }
+  });
+
+  hoveredObject.value = closest;
+  if (closest) {
+    tooltipStyle.value = {
+      left: `${x + 10}px`,
+      top: `${y + 10}px`
+    };
+  }
+};
+
+const hideTooltip = () => {
+  hoveredObject.value = null;
+};
+
+const drawMap = () => {
+  const canvas = document.getElementById('mapCanvas');
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, VIEWPORT_SIZE, VIEWPORT_SIZE);
+
+  // Draw player
+  ctx.fillStyle = 'red';
+  ctx.beginPath();
+  ctx.arc(VIEWPORT_SIZE / 2, VIEWPORT_SIZE / 2, PLAYER_SIZE, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // Draw grid
+  ctx.strokeStyle = '#eee';
+  ctx.lineWidth = 0.5;
+  const gridSize = 50;
+
+  for (let i = 0; i <= VIEWPORT_SIZE; i += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, VIEWPORT_SIZE);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(VIEWPORT_SIZE, i);
+    ctx.stroke();
+  }
+
+  const programData = perProgramSpecificData.value?.[programName.value];
+  if (programData) {
+    Object.values(programData).forEach(obj => {
+      if (obj?.isMyself !== true && obj.coordsX != null && obj.coordsY != null) {
+        const screenPos = worldToScreen(obj.coordsX, obj.coordsY);
+
+        if (screenPos.x >= 0 && screenPos.x <= VIEWPORT_SIZE &&
+            screenPos.y >= 0 && screenPos.y <= VIEWPORT_SIZE) {
+          let pingSize = 3;
+          let color = 'blue';
+          let shape = 'circle';
+          if (obj.resources && obj.resources.length > 0) {
+            if (obj.resources[0].information.name.includes('plant')) {
+              color = 'green';
+            } else if (obj.resources[0].information.name.includes('stockpile')) {
+              color = 'orange';
+            } else if (obj.resources[0].information.name.includes('body')) {
+              color = 'red';
+              pingSize = 5;
+            } else if (obj.resources[0].information.name.includes('palisadeseg')) {
+              color = 'brown';
+              shape = 'square';
+            } else if (obj.resources[0].information.name.includes('palisadecp')) {
+              color = 'brown';
+              pingSize = 5;
+              shape = 'square';
+            }
+          }
+
+          ctx.fillStyle = obj === hoveredObject.value ? 'yellow' : color;
+          ctx.beginPath();
+          if (shape === 'circle') {
+            ctx.arc(screenPos.x, screenPos.y, pingSize, 0, 2 * Math.PI);
+          } else if (shape === 'square') {
+            ctx.rect(screenPos.x - pingSize, screenPos.y - pingSize, pingSize * 2, pingSize * 2);
+          }
+          ctx.fill();
+        }
+      }
+    });
+  }
+};
+
+watch(
+    () => perProgramSpecificData.value?.[programName.value],
+    (newData) => {
+      if (newData) {
+        drawMap();
+      }
+    },
+    {deep: true}
+);
+
+watch(hoveredObject, () => {
+  drawMap();
+});
+
+onMounted(() => {
+  drawMap();
+});
+</script>

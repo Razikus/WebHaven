@@ -44,7 +44,9 @@ public class AuthClient implements Closeable {
     static {
 	ssl = new SslHelper();
 	try {
-	    ssl.trust(Resource.class.getResourceAsStream("authsrv.crt"));
+		InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("authsrv.crt");
+
+		ssl.trust(inputStream);
 	} catch(Exception e) {
 	    throw(new RuntimeException(e));
 	}

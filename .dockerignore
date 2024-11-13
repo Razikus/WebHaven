@@ -1,0 +1,5 @@
+build/
+lib/ext
+target/
+WebHavenFrontend/node_modules
+Dockerfile
