@@ -11,6 +11,13 @@ COPY build.xml /build
 RUN rm -rf /build/WebHavenResources/dist
 COPY --from=frontbuilder /tobuild/dist /build/WebHavenResources/dist
 WORKDIR build
+
+COPY pom.xml .
+COPY build.xml .
+
+
+RUN mvn dependency:go-offline
+
 RUN ant -f build.xml extlib-env
 RUN ant -f build.xml extlib/jogl
 RUN ant -f build.xml extlib/lwjgl-base
@@ -21,7 +28,7 @@ RUN mvn clean install
 
 
 FROM amazoncorretto:21-alpine as runner
-COPY --from=backbuilder /build/target/WebHaven-0.2.jar /WebHaven-0.2.jar
+COPY --from=backbuilder /build/target/WebHaven-0.2-with-dependencies.jar /WebHaven-0.2.jar
 
 
 ENV HOST=0.0.0.0
