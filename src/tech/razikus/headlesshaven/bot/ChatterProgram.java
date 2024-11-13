@@ -62,6 +62,13 @@ public class ChatterProgram extends AbstractProgram{
             this.sessName = null;
             this.getManager().getSessions().remove(sessName);
 
+            try {
+                // WAIT 10 SECONDS BEFORE RECONNECT
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                setShouldClose(true);
+            }
+
         }
     }
 
@@ -70,6 +77,7 @@ public class ChatterProgram extends AbstractProgram{
 
         while (!session.connectionCreated() && !this.isShouldClose()) {
             try {
+
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
