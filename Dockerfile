@@ -16,8 +16,6 @@ COPY pom.xml .
 COPY build.xml .
 
 
-RUN mvn dependency:go-offline
-
 RUN ant -f build.xml extlib-env
 RUN ant -f build.xml extlib/jogl
 RUN ant -f build.xml extlib/lwjgl-base
