@@ -40,6 +40,17 @@ public class ObjectManager {
         }
     }
 
+    public PseudoObject getPlayer() {
+        synchronized (pseudoObjectHashMap) {
+            for (PseudoObject obj : pseudoObjectHashMap.values()) {
+                if (obj.getId() == widgetManager.getMyGOBId()) {
+                    return obj;
+                }
+            }
+        }
+        return null;
+    }
+
 
     public boolean objectExists(long id) {
         synchronized (pseudoObjectHashMap) {

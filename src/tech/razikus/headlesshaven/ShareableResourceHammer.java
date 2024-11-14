@@ -118,6 +118,18 @@ public class ShareableResourceHammer implements  Runnable {
                 info = resourceInformationQueue.take();
                 Resource resource = Resource.remote().loadwait(info.getName(), info.getVersion());
                 resourceHashMap.put(info, resource);
+                String name = info.getName();
+//                resource.layers(Resource.Image.class).forEach(layer -> {
+//                    try {
+//
+//                        String safename = name.replaceAll("[^a-zA-Z0-9]", "_");
+//                        System.out.println(safename);
+//                        File file = new File("ttt/" + safename + ".png");
+//                        ImageIO.write(layer.img, "png", file);
+//                    } catch (IOException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                });
             } catch (InterruptedException e) {
                 this.shouldClose = true;
             }

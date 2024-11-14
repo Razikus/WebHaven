@@ -18,6 +18,11 @@ public class ResourceManager {
         GlobalShareableResourceHammer.HAMMER.loadResource(NameVersion.fromResourceInformation(info));
     }
 
+    // @todo - this is a way to load unID resources
+    public void loadResource(NameVersion nameVersion) {
+        GlobalShareableResourceHammer.HAMMER.loadResource(nameVersion);
+    }
+
     @SuppressWarnings("unchecked")
     public static <Layer> Collection<Layer> getLayers(Resource resource) {
         try {

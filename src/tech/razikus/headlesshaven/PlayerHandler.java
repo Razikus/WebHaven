@@ -2,9 +2,7 @@ package tech.razikus.headlesshaven;
 
 import haven.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PlayerHandler implements Connection.Callback, Runnable {
@@ -16,6 +14,8 @@ public class PlayerHandler implements Connection.Callback, Runnable {
     private ObjectManager objectManager = new ObjectManager(resourceManager, widgetManager);
     private AtomicReference<WebHavenState> latestState = new AtomicReference<>();
     private PseudoGlobManager pseudoGlobManager = new PseudoGlobManager(resourceManager);
+    private SimpleMapCache mapCache = new SimpleMapCache(resourceManager, this);
+
 
 
 //    private SynchronousQueue<WebHavenState> queue = new SynchronousQueue<>();
@@ -29,6 +29,7 @@ public class PlayerHandler implements Connection.Callback, Runnable {
         this.connection = connection;
         this.charName = charName;
     }
+
 
     public WebHavenState getLastState() {
         return latestState.get();
@@ -68,7 +69,12 @@ public class PlayerHandler implements Connection.Callback, Runnable {
         msg.addstring(what);
         msg.addlist(args);
         connection.queuemsg(msg);
+    }
 
+    public void requestMap(Coord gc) {
+        PMessage msg = new PMessage(Session.MSG_MAPREQ);
+        msg.addcoord(gc);
+        connection.send(msg);
     }
 
     private void handleuimessage(PMessage msg) {
@@ -82,7 +88,7 @@ public class PlayerHandler implements Connection.Callback, Runnable {
             Object[] cargs = msg.list();
             PseudoWidget ps = new PseudoWidget(this, id, type, parent, pargs, cargs);
             widgetManager.addNewWidget(ps);
-            System.out.println("NEWWDG: " + ps);
+//            System.out.println("NEWWDG: " + ps);
             if (type.equals("charlist")) {
                 sendMessageFromWidget(id, "play", charName);
             }
@@ -95,14 +101,14 @@ public class PlayerHandler implements Connection.Callback, Runnable {
         } else if (msg.type == RMessage.RMSG_DSTWDG) {
             int id = msg.int32();
             widgetManager.removeWidgetAndChildrens(id);
-            System.out.println("WDG REMOVED: " + id);
+//            System.out.println("WDG REMOVED: " + id);
         } else if (msg.type == RMessage.RMSG_ADDWDG) {
             int id = msg.int32();
             int parent = msg.int32();
             Object[] pargs = msg.list();
             PseudoWidget ws = new PseudoWidget(id, parent, pargs);
             widgetManager.widgetSetParent(id, ws);
-            System.out.println("WDG ADDED : " + id + " " + ws);
+//            System.out.println("WDG ADDED : " + id + " " + ws);
         } else if (msg.type == RMessage.RMSG_WDGBAR) {
             Collection<Integer> deps = new ArrayList<>();
             while (!msg.eom()) {
@@ -183,7 +189,7 @@ public class PlayerHandler implements Connection.Callback, Runnable {
     @Override
     public void mapdata(Message msg) {
         firstMessageArrived = true;
-        System.out.println("MD"  + msg);
+        mapCache.mapdata(msg);
 //        Connection.Callback.super.mapdata(msg);
     }
 
@@ -208,9 +214,11 @@ public class PlayerHandler implements Connection.Callback, Runnable {
                 WebHavenState currentState = getWebHavenState();
                 latestState.set(currentState);
                 tick++;
-                if(tick % 30 == 0) {
+                if(tick % 10 == 0) {
                     tick = 0;
                     antiAFK();
+                    System.out.println(this.objectManager.getPlayer().getCoordinate());
+                    this.mapCache.reqAreaAround(this.objectManager.getPlayer().getCoordinate(), 2);
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
