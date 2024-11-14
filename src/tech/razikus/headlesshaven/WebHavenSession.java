@@ -22,6 +22,7 @@ public class WebHavenSession implements Runnable {
 
     private ArrayList<ChatCallback> initialChatCallbacks;
     private ArrayList<ObjectChangeCallback> initialObjectChangeCallbacks;
+    private ArrayList<PseudoWidgetErrorCallback> errorCallbacks = new ArrayList<>();
 
     public WebHavenSession(String username, String password, String characterName) {
         this.username = username;
@@ -29,8 +30,19 @@ public class WebHavenSession implements Runnable {
         this.characterName = characterName;
         this.shouldClose = false;
         this.initialChatCallbacks = new ArrayList<>();
+        this.initialObjectChangeCallbacks = new ArrayList<>();
+        this.errorCallbacks = new ArrayList<>();
     }
 
+    public WebHavenSession(String username, String password, String characterName, ArrayList<ChatCallback> initialChatCallbacks, ArrayList<ObjectChangeCallback> initialObjectChangeCallbacks, ArrayList<PseudoWidgetErrorCallback> errorCallbacks) {
+        this.username = username;
+        this.password = password;
+        this.characterName = characterName;
+        this.shouldClose = false;
+        this.initialChatCallbacks = initialChatCallbacks;
+        this.initialObjectChangeCallbacks = initialObjectChangeCallbacks;
+        this.errorCallbacks = errorCallbacks;
+    }
 
     public WebHavenSession(String username, String password, String characterName, ArrayList<ChatCallback> initialChatCallbacks, ArrayList<ObjectChangeCallback> initialObjectChangeCallbacks) {
         this.username = username;
@@ -39,6 +51,7 @@ public class WebHavenSession implements Runnable {
         this.shouldClose = false;
         this.initialChatCallbacks = initialChatCallbacks;
         this.initialObjectChangeCallbacks = initialObjectChangeCallbacks;
+        this.errorCallbacks = new ArrayList<>();
     }
 
     public WebHavenSession(String username, String password, String characterName, ArrayList<ChatCallback> initialChatCallbacks) {
@@ -48,7 +61,9 @@ public class WebHavenSession implements Runnable {
         this.shouldClose = false;
         this.initialChatCallbacks = initialChatCallbacks;
         this.initialObjectChangeCallbacks = new ArrayList<>();
+        this.errorCallbacks = new ArrayList<>();
     }
+
 
 
 
@@ -83,6 +98,15 @@ public class WebHavenSession implements Runnable {
         }
 
         handler.addObjectChangeCallback(cb);
+        return true;
+    }
+
+    public boolean addErrorCallback(PseudoWidgetErrorCallback cb) {
+        if(handler == null) {
+            return false;
+        }
+
+        handler.addErrorCallback(cb);
         return true;
     }
 
@@ -130,6 +154,11 @@ public class WebHavenSession implements Runnable {
             if (this.initialObjectChangeCallbacks != null && !this.initialObjectChangeCallbacks.isEmpty()) {
                 for (ObjectChangeCallback cb: this.initialObjectChangeCallbacks) {
                     this.addObjectChangeCallback(cb);
+                }
+            }
+            if (this.errorCallbacks != null && !this.errorCallbacks.isEmpty()) {
+                for (PseudoWidgetErrorCallback cb: this.errorCallbacks) {
+                    this.addErrorCallback(cb);
                 }
             }
             connection.add(this.handler);

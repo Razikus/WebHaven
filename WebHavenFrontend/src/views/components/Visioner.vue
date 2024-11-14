@@ -1,5 +1,12 @@
 <template>
+  <ErrorToast ref="toastRef" ></ErrorToast>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <FlowerMenu
+        v-if="flowerMenu"
+        :menu="flowerMenu"
+        @select="handleFlowerMenuSelect"
+        @close="closeFlowerMenu"
+    />
     <div class="bg-white rounded-lg shadow relative">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="flex justify-center">
@@ -40,6 +47,10 @@
 <script setup>
 import {ref, inject, computed, watch, onMounted} from 'vue';
 import {useRoute} from 'vue-router';
+import FlowerMenu from './FlowerMenu.vue';
+import ErrorToast from "./ErrorToast.vue";
+const toastRef = ref(null);
+
 
 const VIEWPORT_SIZE = 1100;
 const PLAYER_SIZE = 5;
@@ -48,7 +59,7 @@ const HOVER_RADIUS = 10;
 const route = useRoute();
 const programName = computed(() => route.params.name);
 const {sendMessage, registerMessageCallback, unregisterMessageCallback} = inject('websocket');
-
+const flowerMenu = ref(null);
 const globalObjectState = ref(null);
 const onData = (data) => {
   if(data.cmdType == "fullobj") {
@@ -65,9 +76,32 @@ const onData = (data) => {
     if(globalObjectState.value) {
       globalObjectState.value[data.data.id] = data.data;
     }
+  } else if(data.cmdType == "flowermenu") {
+    if(data.data) {
+      flowerMenu.value = data.data;
+    } else {
+      flowerMenu.value = null;
+    }
+  } else if(data.cmdType == "error") {
+    toastRef.value?.addToast(data.data);
   }
 };
 
+const closeFlowerMenu = () => {
+  sendMessage("proginput", {
+    program: programName.value,
+    cmdType: 'flowermenu',
+    option: -1
+  });
+};
+
+const handleFlowerMenuSelect = (option) => {
+  sendMessage("proginput", {
+    program: programName.value,
+    cmdType: 'flowermenu',
+    option: option
+  });
+};
 
 const hoveredObject = ref(null);
 const tooltipStyle = ref({
@@ -190,6 +224,9 @@ const handleMouseMove = (event) => {
       for (const resource of obj.resources) {
         if (resource.name == "gfx/terobjs/arch/hwall") {
           isWall = true;
+        } else if(resource.name == "gfx/tiles/ridges/caveout") {
+          // isWall = true;
+
         }
       }
 

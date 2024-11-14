@@ -11,11 +11,11 @@ import java.util.Objects;
 
 
 public class FlowerMenuPseudoWidget extends PseudoWidget {
-
+    private PseudoWidgetManager manager;
     private String[] options;
-    public FlowerMenuPseudoWidget(PseudoWidget original) {
+    public FlowerMenuPseudoWidget(PseudoWidgetManager manager, PseudoWidget original) {
         super(original);
-
+        this.manager = manager;
         String[] opts = new String[original.getCargs().length];
         System.out.println("FLOWER MENU OPTIONS: " + original.getCargs().length + ": " + Arrays.toString(original.getCargs()));
         for(int i = 0; i < original.getCargs().length; i++)
@@ -29,12 +29,14 @@ public class FlowerMenuPseudoWidget extends PseudoWidget {
 
     public void close() {
         this.WidgetMsg("cl", -1);
+        this.manager.removeWidgetAndChildrens(this.getId());
     }
 
     public void click(int index) {
         // handle shifts etc @todo
         int modflags = 0;
         this.WidgetMsg("cl", index, modflags);
+        this.manager.removeWidgetAndChildrens(this.getId());
     }
 
     @Override
@@ -50,7 +52,7 @@ class FlowerMenuPseudoWidgetSerializer implements JsonSerializer<FlowerMenuPseud
         obj.addProperty("id", src.getId());
         obj.addProperty("type", src.getType());
         obj.addProperty("parent", src.getParent());
-        obj.addProperty("options", Arrays.toString(src.getOptions()));
+        obj.add("options", context.serialize(src.getOptions()));
         return obj;
     }
 }

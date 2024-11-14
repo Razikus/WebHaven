@@ -18,6 +18,7 @@ public class PlayerHandler implements Connection.Callback, Runnable {
 
     private ArrayList<ChatCallback> chatCallbacks = new ArrayList<>();
     private ArrayList<ObjectChangeCallback> objectChangeCallbacks = new ArrayList<>();
+    private ArrayList<PseudoWidgetErrorCallback> errorCallbacks = new ArrayList<>();
 
 
 //    private SynchronousQueue<WebHavenState> queue = new SynchronousQueue<>();
@@ -30,7 +31,7 @@ public class PlayerHandler implements Connection.Callback, Runnable {
     public PlayerHandler(Connection connection, String charName) {
         this.connection = connection;
         this.charName = charName;
-        this.widgetManager = new PseudoWidgetManager(chatCallbacks);
+        this.widgetManager = new PseudoWidgetManager(chatCallbacks, errorCallbacks);
         this.objectManager = new ObjectManager(resourceManager, widgetManager, objectChangeCallbacks);
     }
 
@@ -256,6 +257,12 @@ public class PlayerHandler implements Connection.Callback, Runnable {
     public void addObjectChangeCallback(ObjectChangeCallback cb) {
         synchronized (objectChangeCallbacks) {
             objectChangeCallbacks.add(cb);
+        }
+    }
+
+    public void addErrorCallback(PseudoWidgetErrorCallback cb) {
+        synchronized (errorCallbacks) {
+            errorCallbacks.add(cb);
         }
     }
 }

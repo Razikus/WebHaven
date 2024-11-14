@@ -15,6 +15,8 @@ public class PseudoWidgetManager {
 
     private ArrayList<ChatCallback> callbacks;
 
+    private ArrayList<PseudoWidgetErrorCallback> errorCallbacks = new ArrayList<>();
+
     private MapViewPseudoWidget mapView = null;
 
 
@@ -27,8 +29,9 @@ public class PseudoWidgetManager {
     private String myCharacter;
 
 
-    public PseudoWidgetManager(ArrayList<ChatCallback> callbacks) {
+    public PseudoWidgetManager(ArrayList<ChatCallback> callbacks, ArrayList<PseudoWidgetErrorCallback> errorCallbacks) {
         this.callbacks = callbacks;
+        this.errorCallbacks = errorCallbacks;
     }
 
 
@@ -55,7 +58,14 @@ public class PseudoWidgetManager {
             if (found != null) {
                 found.ReceiveMessage(message);
             } else {
-                System.out.println("WIDGET NOT FOUND: " + message);
+                if(message.getName().equals("err")) {
+                    for (PseudoWidgetErrorCallback cb: errorCallbacks) {
+                        cb.onError((String) message.getArgs()[0]);
+                    }
+
+                } else {
+                    System.out.println("WIDGET NOT FOUND: " + message);
+                }
             }
         }
     }
@@ -133,7 +143,7 @@ public class PseudoWidgetManager {
                     }
                     break;
                 case "sm":
-                    FlowerMenuPseudoWidget flowerMenuPseudoWidget = new FlowerMenuPseudoWidget(widget);
+                    FlowerMenuPseudoWidget flowerMenuPseudoWidget = new FlowerMenuPseudoWidget(this, widget);
                     toAdd = flowerMenuPseudoWidget;
                     flowerMenus.put(widget.id, flowerMenuPseudoWidget);
                     break;
@@ -184,6 +194,10 @@ public class PseudoWidgetManager {
                 currentWidget.pargs = widget.pargs;
             }
         }
+    }
+
+    public void addErrorCallback(PseudoWidgetErrorCallback callback) {
+        errorCallbacks.add(callback);
     }
 
 }

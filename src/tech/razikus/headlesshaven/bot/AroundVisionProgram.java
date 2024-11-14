@@ -42,10 +42,14 @@ public class AroundVisionProgram extends AbstractProgram{
                 return;
             }
 
+            ErrorSenderCallback errorSenderCallback = new ErrorSenderCallback(manager, this.getProgname());
+            ArrayList<PseudoWidgetErrorCallback> errorCallbacks = new ArrayList<>();
+            errorCallbacks.add(errorSenderCallback);
+
             ObjectChangeCallback callback = new ObjectSenderCallback(manager, this.getProgname());
             ArrayList<ObjectChangeCallback> callbacks = new ArrayList<>();
             callbacks.add(callback);
-            WebHavenSession session = new WebHavenSession(username, password, altname, new ArrayList<>(), callbacks);
+            WebHavenSession session = new WebHavenSession(username, password, altname, new ArrayList<>(), callbacks, errorCallbacks);
             try {
                 session.authenticate();
             } catch (InterruptedException e) {
@@ -93,8 +97,12 @@ public class AroundVisionProgram extends AbstractProgram{
 
 
         while ((session.isAlive() && !this.isShouldClose())) {
-//            HashMap<Long, PseudoObject> map = session.getHandler().getObjectManager().getPseudoObjectHashMapTHSafe();
-//            this.getManager().brodcastFromProgram(this.getProgname(), map);
+            session.getWidgetManager().getVisibleFlowerMenu().ifPresentOrElse(fm -> {
+                System.out.println(fm);
+                this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper("flowermenu", fm));
+            }, () -> {
+                this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper("flowermenu", null));
+            });
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -164,6 +172,19 @@ public class AroundVisionProgram extends AbstractProgram{
                 HashMap<Long, PseudoObject> map = session.getHandler().getObjectManager().getPseudoObjectHashMapTHSafe();
                 this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper("fullobj", map));
                 break;
+            case "flowermenu":
+                int option = command.get("option").getAsInt();
+                session.getWidgetManager().getVisibleFlowerMenu().ifPresentOrElse(fm -> {
+                    if(option == -1) {
+                        fm.close();
+                    } else {
+                        fm.click(option);
+                    }
+                }, () -> {
+                    System.out.println("NO FLOWER MENU");
+                });
+                break;
+
             default:
                 System.out.println("NOT SUPPORTED YET: " + cmdType);
                 break;
@@ -194,6 +215,22 @@ class ObjectSenderCallback extends ObjectChangeCallback {
     @Override
     public void objectChanged(PseudoObject obj) {
         manager.brodcastFromProgram(this.progName, new CommandTypeWrapper("objectchanged", obj));
+    }
+}
+
+class ErrorSenderCallback extends PseudoWidgetErrorCallback {
+
+    private WebHavenSessionManager manager;
+    private String progName;
+
+    public ErrorSenderCallback(WebHavenSessionManager manager, String progName) {
+        this.manager = manager;
+        this.progName = progName;
+    }
+
+    @Override
+    public void onError(String message) {
+        manager.brodcastFromProgram(this.progName, new CommandTypeWrapper("error", message));
     }
 }
 
