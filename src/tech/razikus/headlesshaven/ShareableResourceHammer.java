@@ -8,9 +8,53 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+
+class NameVersion {
+    private String name;
+    private int version;
+
+    public NameVersion(String name, int version) {
+        this.name = name;
+        this.version = version;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NameVersion that = (NameVersion) o;
+        return version == that.version && Objects.equals(name, that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, version);
+    }
+
+    @Override
+    public String toString() {
+        return "NameVersion{" +
+                "name='" + name + '\'' +
+                ", version=" + version +
+                '}';
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public static NameVersion fromResourceInformation(ResourceInformation info) {
+        return new NameVersion(info.getName(), info.getResver());
+    }
+}
 
 class GlobalShareableResourceHammer {
     public static final ShareableResourceHammer HAMMER = new ShareableResourceHammer();
@@ -35,9 +79,8 @@ class GlobalShareableResourceHammer {
 }
 
 public class ShareableResourceHammer implements  Runnable {
-    private BlockingQueue<ResourceInformation> resourceInformationQueue  = new LinkedBlockingQueue<>();
-    private ConcurrentHashMap<ResourceInformation, Resource> resourceHashMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Integer, Resource> resourceInformationHashMap = new ConcurrentHashMap<>();
+    private BlockingQueue<NameVersion> resourceInformationQueue  = new LinkedBlockingQueue<>();
+    private ConcurrentHashMap<NameVersion, Resource> resourceHashMap = new ConcurrentHashMap<>();
 
     private boolean shouldClose = false;
 
@@ -49,28 +92,32 @@ public class ShareableResourceHammer implements  Runnable {
         return shouldClose;
     }
 
-    public void loadResource(ResourceInformation info) {
+    public void loadResource(NameVersion info) {
         resourceInformationQueue.add(info);
     }
 
-    public Resource getResource(ResourceInformation info) {
+    public void loadResource(String name, int version) {
+        loadResource(new NameVersion(name, version));
+    }
+
+    public Resource getResource(NameVersion info) {
         return resourceHashMap.get(info);
     }
 
-    public Resource getResourceById(int id) {
-        return resourceInformationHashMap.get(id);
+    public Resource getResource(String name, int version) {
+        return getResource(new NameVersion(name, version));
     }
+
 
     @Override
     public void run() {
         System.out.println("HAMMER STARTED");
         while (!isShouldClose()) {
-            ResourceInformation info = null;
+            NameVersion info = null;
             try {
                 info = resourceInformationQueue.take();
-                Resource resource = Resource.remote().loadwait(info.getName(), info.getResver());
+                Resource resource = Resource.remote().loadwait(info.getName(), info.getVersion());
                 resourceHashMap.put(info, resource);
-                resourceInformationHashMap.put(info.getId(), resource);
             } catch (InterruptedException e) {
                 this.shouldClose = true;
             }

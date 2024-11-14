@@ -29,22 +29,6 @@ public class PseudoObject {
     private CompositePoseState poseState = new CompositePoseState();
 
 
-    private ResourceClickableInfo clickableInfo;
-
-    private void loadClickableInfo(String resName) {
-        manager.getResourceInfo(resName)
-                .thenAccept(info -> {
-                    if(resName.contains("timberh")) {
-                        System.out.println(info);
-
-                    }
-                    this.clickableInfo = info;
-                })
-                .exceptionally(throwable -> {
-                    System.err.println("Failed to load clickable info for " + resName + ": " + throwable.getMessage());
-                    return null;
-                });
-    }
 
     public PseudoObject(ResourceManager manager, PseudoWidgetManager widgetManager, long id) {
         this.id = id;
@@ -175,14 +159,6 @@ public class PseudoObject {
                     break;
                 case OCache.OD_OVERLAY:
                     handleOverlay(delta, attr);
-//                    new Thread(() -> {
-//                        try {
-//                            Thread.sleep(3000);
-//                            System.out.println(this.overlays);
-//                        } catch (InterruptedException e) {
-//                            throw new RuntimeException(e);
-//                        }
-//                    }).start();
                     break;
                 case OCache.OD_HEALTH:
                     health = attr.uint8() / 4.0f;
@@ -254,15 +230,7 @@ public class PseudoObject {
         }
         ResourceInformationLazyProxy proxy = new ResourceInformationLazyProxy(manager, resid, sdt);
         resourceInformationLazyProxies.add(proxy);
-        new Thread(() -> {
-            try {
-                Thread.sleep(3000);
-                String name = proxy.getResource().getInformation().getName();
-                loadClickableInfo(name);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }).start();
+
     }
 
     private void handleOdCompose(OCache.ObjDelta fulldelta, OCache.AttrDelta attr) {
