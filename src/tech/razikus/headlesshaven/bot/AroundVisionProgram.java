@@ -3,15 +3,13 @@ package tech.razikus.headlesshaven.bot;
 import com.google.gson.JsonObject;
 import haven.Coord;
 import haven.Coord2d;
-import tech.razikus.headlesshaven.PseudoObject;
-import tech.razikus.headlesshaven.PseudoWidget;
-import tech.razikus.headlesshaven.WebHavenSession;
-import tech.razikus.headlesshaven.WebHavenSessionManager;
+import tech.razikus.headlesshaven.*;
 import tech.razikus.headlesshaven.bot.automation.DiscordWebhook;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 
 import static haven.OCache.posres;
 
@@ -44,7 +42,10 @@ public class AroundVisionProgram extends AbstractProgram{
                 return;
             }
 
-            WebHavenSession session = new WebHavenSession(username, password, altname, new ArrayList<>());
+            ObjectChangeCallback callback = new ObjectSenderCallback(manager, this.getProgname());
+            ArrayList<ObjectChangeCallback> callbacks = new ArrayList<>();
+            callbacks.add(callback);
+            WebHavenSession session = new WebHavenSession(username, password, altname, new ArrayList<>(), callbacks);
             try {
                 session.authenticate();
             } catch (InterruptedException e) {
@@ -92,11 +93,8 @@ public class AroundVisionProgram extends AbstractProgram{
 
 
         while ((session.isAlive() && !this.isShouldClose())) {
-            HashMap<Long, PseudoObject> map = session.getHandler().getObjectManager().getPseudoObjectHashMapTHSafe();
-            this.getManager().brodcastFromProgram(this.getProgname(), map);
-//            map.forEach((k, v) -> {
-//                System.out.println(v);
-//            });
+//            HashMap<Long, PseudoObject> map = session.getHandler().getObjectManager().getPseudoObjectHashMapTHSafe();
+//            this.getManager().brodcastFromProgram(this.getProgname(), map);
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -127,7 +125,9 @@ public class AroundVisionProgram extends AbstractProgram{
 
     @Override
     public void handleInput(JsonObject command) {
+        System.out.println("COMMAND RECEIVED: " + command);
         String cmdType = command.get("cmdType").getAsString();
+        System.out.println("COMMAND RECEIVED: " + cmdType);
         switch (cmdType) {
             case "click":
                 float rawX = command.get("x").getAsFloat();
@@ -137,17 +137,8 @@ public class AroundVisionProgram extends AbstractProgram{
 
                 Coord2d gameCoord = new Coord2d(rawX, rawY);
                 Coord clickCoord = gameCoord.floor(posres);
-                Object[] args = new Object[] {
-                        new Coord((int)rawX, (int)rawY),  // pixel coordinates
-                        clickCoord,                        // game world coordinates
-                        button,
-                        modifiers
-                };
-                ArrayList<PseudoWidget> wgs = session.getWidgetManager().getWidgetsByType("mapview");
-                if(!wgs.isEmpty()) {
-                    PseudoWidget wg = wgs.getFirst();
-                    wg.WidgetMsg("click", args);
-                }
+
+                session.getWidgetManager().getMapView().ifPresent(mv -> mv.mapClick(new Coord((int)rawX, (int)rawY), clickCoord, button, modifiers));
                 break;
             case "gobclick":
                 float rawX1 = command.get("x").getAsFloat();
@@ -159,57 +150,88 @@ public class AroundVisionProgram extends AbstractProgram{
 
                 PseudoObject gob = session.getHandler().getObjectManager().getPseudoObjectHashMap().get(gobId);
                 Coord2d gobCoord = gob.getCoordinate();
-                Coord2d relativeClick = new Coord2d(38.0, 0.0);
-                if (gob.getAngle() != 0) {
-                    double cos = Math.cos(gob.getAngle());
-                    double sin = Math.sin(gob.getAngle());
-                    relativeClick = new Coord2d(
-                            relativeClick.x * cos - relativeClick.y * sin,
-                            relativeClick.x * sin + relativeClick.y * cos
-                    );
-                }
-                Coord2d worldClickPos = gobCoord.add(relativeClick);  // Only add once!
+
 
                 Coord gobCoordPosRes = gobCoord.floor(posres);
-                Coord clickCoord1 = worldClickPos.floor(posres);
 
                 Coord pc = new Coord((int)rawX1, (int)rawY1);
-                Object[] args1 = new Object[] {
-                        pc,                 // screen coordinate
-                        clickCoord1,        // clicked map coordinate
-                        button1,            // button pressed
-                        modifiers1,         // modifier keys
-                        0, // clickargs of GobClick extends Clickabl in Gob.java
-                        gobId,              // clicked gob ID
-                        gobCoordPosRes,
-                        0,
-                        meshid
-                };
-//                click: [(733, 407), (-965701, -975892), 3, 0, 0, 1648077781, (-965632, -978944), 0, 16] in
- //               click: [(725, 615), (-970284, -972670), 3, 0, 0, 1868781591, (-969728, -972800), 0, -1] out
-                /* ORIGINICAL CLICKARGS:
-                public Object[] clickargs(ClickData cd) {
-                    Object[] ret = {0, (int)gob.id, gob.rc.floor(OCache.posres), 0, -1};
-                    for(Object node : cd.array()) {
-                    if(node instanceof Gob.Overlay) {
-                        ret[0] = 1;
-                        ret[3] = ((Gob.Overlay)node).id;
-                    }
-                    if(node instanceof FastMesh.ResourceMesh)
-                        ret[4] = ((FastMesh.ResourceMesh)node).id;
-                    }
-                    return(ret);
-                }
-                 */
-                ArrayList<PseudoWidget> wgs1 = session.getWidgetManager().getWidgetsByType("mapview");
-                if(!wgs1.isEmpty()) {
-                    PseudoWidget wg = wgs1.getFirst();
-                    wg.WidgetMsg("click", args1);
-                }
+                System.out.println("GOB CLICKED: " + pc + gobCoord + " " + gobCoordPosRes + " " + gobId + " " + meshid);
+                session.getWidgetManager().getMapView().ifPresent(mv -> mv.gobClick(
+                        pc, gobCoordPosRes, button1, modifiers1, false, gobId, gobCoordPosRes, 0, meshid
+                ));
+                break;
+            case "requestfullobj":
+                HashMap<Long, PseudoObject> map = session.getHandler().getObjectManager().getPseudoObjectHashMapTHSafe();
+                this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper("fullobj", map));
                 break;
             default:
                 System.out.println("NOT SUPPORTED YET: " + cmdType);
                 break;
         }
+    }
+}
+
+class ObjectSenderCallback extends ObjectChangeCallback {
+
+    private WebHavenSessionManager manager;
+    private String progName;
+
+    public ObjectSenderCallback(WebHavenSessionManager manager, String progName) {
+        this.manager = manager;
+        this.progName = progName;
+    }
+
+    @Override
+    public void objectRemoved(long id) {
+        manager.brodcastFromProgram(this.progName, new CommandTypeWrapper("objectremoved", id));
+    }
+
+    @Override
+    public void objectAdded(PseudoObject obj) {
+        manager.brodcastFromProgram(this.progName, new CommandTypeWrapper("objectadded", obj));
+    }
+
+    @Override
+    public void objectChanged(PseudoObject obj) {
+        manager.brodcastFromProgram(this.progName, new CommandTypeWrapper("objectchanged", obj));
+    }
+}
+
+class CommandTypeWrapper {
+    private String cmdType;
+    private Object data;
+
+    public CommandTypeWrapper(String cmdType, Object data) {
+        this.cmdType = cmdType;
+        this.data = data;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CommandTypeWrapper that = (CommandTypeWrapper) o;
+        return Objects.equals(cmdType, that.cmdType) && Objects.equals(data, that.data);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cmdType, data);
+    }
+
+    @Override
+    public String toString() {
+        return "CommandTypeWrapper{" +
+                "cmdType='" + cmdType + '\'' +
+                ", data=" + data +
+                '}';
+    }
+
+    public String getCmdType() {
+        return cmdType;
+    }
+
+    public Object getData() {
+        return data;
     }
 }

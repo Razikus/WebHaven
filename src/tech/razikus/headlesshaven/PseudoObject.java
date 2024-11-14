@@ -27,6 +27,7 @@ public class PseudoObject {
 
 
 
+
     public PseudoObject(ResourceManager manager, PseudoWidgetManager widgetManager, long id) {
         this.id = id;
         this.widgetManager = widgetManager;

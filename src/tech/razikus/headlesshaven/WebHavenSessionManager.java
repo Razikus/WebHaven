@@ -36,6 +36,7 @@ public class WebHavenSessionManager {
         this.gson = new GsonBuilder()
                 .registerTypeAdapter(PseudoObject.class, new PseudoObjectSerializer())
                 .registerTypeAdapter(Resource.class, new ResourceSerializer())
+                .registerTypeAdapter(FlowerMenuPseudoWidget.class, new FlowerMenuPseudoWidgetSerializer())
                 .create();
 
         // @todo do it differently

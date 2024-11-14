@@ -45,7 +45,7 @@ public class SimpleMapCache {
         public final int[] tiles;      // Tile IDs
         public final Coord coord;      // Grid coordinates
         public long id;
-        public final float z[] = new float[cmaps.x * cmaps.y];
+        public final float[] z = new float[cmaps.x * cmaps.y];
 
         public GridData(Coord coord) {
             this.coord = coord;

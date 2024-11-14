@@ -2,17 +2,20 @@ package tech.razikus.headlesshaven;
 
 import haven.OCache;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ObjectManager {
 
     private ResourceManager resourceManager;
     private PseudoWidgetManager widgetManager;
+    private ArrayList<ObjectChangeCallback> callbacks = new ArrayList<>();
 
 
-    public ObjectManager(ResourceManager resourceManager, PseudoWidgetManager widgetManager) {
+    public ObjectManager(ResourceManager resourceManager, PseudoWidgetManager widgetManager, ArrayList<ObjectChangeCallback> callbacks) {
         this.resourceManager = resourceManager;
         this.widgetManager = widgetManager;
+        this.callbacks = callbacks;
     }
 
 
@@ -67,6 +70,9 @@ public class ObjectManager {
         if (delta.rem) {
             removeObject(delta.id);
             System.out.println("OBJECT REMOVED: " + delta.id);
+            for (ObjectChangeCallback cb : callbacks) {
+                cb.objectRemoved(delta.id);
+            }
         } else {
             if(!objectExists(delta.id)) {
                 int flags = delta.fl;
@@ -75,8 +81,16 @@ public class ObjectManager {
                 PseudoObject obj = new PseudoObject(resourceManager, widgetManager, delta.id);
                 obj.fillNew(delta);
                 addObject(obj);
+                for (ObjectChangeCallback cb : callbacks) {
+                    cb.objectAdded(obj);
+                }
             } else {
                 handleRealDelta(delta.id, delta);
+                for (ObjectChangeCallback cb : callbacks) {
+                    if(pseudoObjectHashMap.containsKey(delta.id)) {
+                        cb.objectChanged(pseudoObjectHashMap.get(delta.id));
+                    }
+                }
             }
         }
     }

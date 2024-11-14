@@ -47,7 +47,27 @@ const SCALE = 1;
 const HOVER_RADIUS = 10;
 const route = useRoute();
 const programName = computed(() => route.params.name);
-const {perProgramSpecificData, sendMessage} = inject('websocket');
+const {sendMessage, registerMessageCallback, unregisterMessageCallback} = inject('websocket');
+
+const globalObjectState = ref(null);
+const onData = (data) => {
+  if(data.cmdType == "fullobj") {
+    globalObjectState.value = data.data;
+  } else if(data.cmdType == "objectchanged") {
+    if(globalObjectState.value) {
+      globalObjectState.value[data.data.id] = data.data;
+    }
+  } else if (data.cmdType == "objectremoved") {
+    if(globalObjectState.value) {
+      delete globalObjectState.value[data.data.id];
+    }
+  } else if (data.cmdType == "objectadded") {
+    if(globalObjectState.value) {
+      globalObjectState.value[data.data.id] = data.data;
+    }
+  }
+};
+
 
 const hoveredObject = ref(null);
 const tooltipStyle = ref({
@@ -56,13 +76,11 @@ const tooltipStyle = ref({
 });
 
 const playerPosition = computed(() => {
-  const programData = perProgramSpecificData.value?.[programName.value];
-  if (!programData) {
+  if (!globalObjectState.value) {
     console.warn('No program data available');
     return {x: 0, y: 0};
   }
-
-  const playerObj = Object.values(programData).find(obj => {
+  const playerObj = Object.values(globalObjectState.value).find(obj => {
     return obj?.isMyself === true &&
         typeof obj.coordsX === 'number' &&
         typeof obj.coordsY === 'number';
@@ -153,7 +171,7 @@ const handleMouseMove = (event) => {
   const y = event.clientY - rect.top;
 
   const worldPos = screenToWorld(x, y);
-  const programData = perProgramSpecificData.value?.[programName.value];
+  const programData = globalObjectState.value;
 
   if (!programData) return;
 
@@ -225,7 +243,7 @@ const drawMap = () => {
   }
 
 
-  const programData = perProgramSpecificData.value?.[programName.value];
+  const programData = globalObjectState.value;
   if (programData) {
     Object.values(programData).forEach(obj => {
       if (obj?.isMyself !== true && obj.coordsX != null && obj.coordsY != null) {
@@ -313,7 +331,7 @@ const drawMap = () => {
 };
 
 watch(
-    () => perProgramSpecificData.value?.[programName.value],
+    () => globalObjectState.value,
     (newData) => {
       if (newData) {
         drawMap();
@@ -328,5 +346,10 @@ watch(hoveredObject, () => {
 
 onMounted(() => {
   drawMap();
+  registerMessageCallback(programName.value, onData);
+  sendMessage('proginput', {
+    program: programName.value,
+    cmdType: 'requestfullobj'
+  })
 });
 </script>

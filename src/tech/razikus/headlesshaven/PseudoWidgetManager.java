@@ -3,6 +3,7 @@ package tech.razikus.headlesshaven;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class PseudoWidgetManager {
     final private HashMap<Integer, PseudoWidget> pseudoWidgetHashMap = new HashMap<>();
@@ -10,8 +11,11 @@ public class PseudoWidgetManager {
     private BuddyPseudoWidget instantiatedBuddy;
 
     private HashMap<Integer, ChatPseudoWidget> chatWidgets = new HashMap<>();
+    private HashMap<Integer, FlowerMenuPseudoWidget> flowerMenus = new HashMap<>();
 
-    private final ArrayList<ChatCallback> callbacks = new ArrayList<>();
+    private ArrayList<ChatCallback> callbacks;
+
+    private MapViewPseudoWidget mapView = null;
 
 
     // @todo move to different components, but why now
@@ -23,7 +27,8 @@ public class PseudoWidgetManager {
     private String myCharacter;
 
 
-    public PseudoWidgetManager() {
+    public PseudoWidgetManager(ArrayList<ChatCallback> callbacks) {
+        this.callbacks = callbacks;
     }
 
 
@@ -95,6 +100,7 @@ public class PseudoWidgetManager {
     }
 
     public void addNewWidget(PseudoWidget widget) {
+        System.out.println("NEW WIDGET: " + widget);
         synchronized (pseudoWidgetHashMap) {
             PseudoWidget toAdd = widget;
             if(widget.type.startsWith("ui/vlg:")) {
@@ -125,6 +131,15 @@ public class PseudoWidgetManager {
                         chatWidgets.put(widget.id, chatPseudoWidget);
 
                     }
+                    break;
+                case "sm":
+                    FlowerMenuPseudoWidget flowerMenuPseudoWidget = new FlowerMenuPseudoWidget(widget);
+                    toAdd = flowerMenuPseudoWidget;
+                    flowerMenus.put(widget.id, flowerMenuPseudoWidget);
+                    break;
+                case "mapview":
+                    mapView = new MapViewPseudoWidget(widget);
+                    break;
             }
             pseudoWidgetHashMap.put(widget.id, toAdd);
         }
@@ -134,15 +149,29 @@ public class PseudoWidgetManager {
         removeWidgetAndChildrens(widget.id);
     }
 
+    public Optional<FlowerMenuPseudoWidget> getVisibleFlowerMenu() {
+        return flowerMenus.values().stream().findFirst();
+    }
+
+    public Optional<MapViewPseudoWidget> getMapView() {
+        return Optional.ofNullable(mapView);
+    }
+
     public void removeWidgetAndChildrens(int widgetId) {
         synchronized (pseudoWidgetHashMap) {
             pseudoWidgetHashMap.remove(widgetId);
             chatWidgets.remove(widgetId);
             pseudoWidgetHashMap.entrySet().removeIf(entry -> entry.getValue().parent == widgetId);
-            if(widgetId == instantiatedBuddy.getId()) {
+            if(instantiatedBuddy != null && widgetId == instantiatedBuddy.getId()) {
                 instantiatedBuddy = null;
             }
+            if (mapView != null && widgetId == mapView.getId()) {
+                mapView = null;
+            }
+            chatWidgets.remove(widgetId);
+            flowerMenus.remove(widgetId);
         }
+        System.out.println("REMOVED WIDGET: " + widgetId);
     }
 
     public void widgetSetParent(int widgetID, PseudoWidget widget) {
@@ -157,13 +186,4 @@ public class PseudoWidgetManager {
         }
     }
 
-    // this method adds a callback to existing and possible existing chatwidgets
-    public void addGlobalChatCallback(ChatCallback cb) {
-        synchronized (callbacks) {
-            callbacks.add(cb);
-            for (Map.Entry<Integer, ChatPseudoWidget> wg: chatWidgets.entrySet()) {
-                wg.getValue().addCallback(cb);
-            }
-        }
-    }
 }

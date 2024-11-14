@@ -13,9 +13,22 @@ export default function useWebSocket() {
   const runningPrograms = ref([]);
   const runningProgramData = ref({});
 
-  const perProgramSpecificData = ref({});
-
   const programSessions = ref({});
+
+  const registeredMessageCallbacks = ref({});
+
+  const registerMessageCallback = (programName, consumer) => {
+    if (!registeredMessageCallbacks.value[programName]) {
+      registeredMessageCallbacks.value[programName] = [];
+    }
+    registeredMessageCallbacks.value[programName].push(consumer);
+  }
+
+  const unregisterMessageCallback = (programName, consumer) => {
+    if (registeredMessageCallbacks.value[programName]) {
+      registeredMessageCallbacks.value[programName] = registeredMessageCallbacks.value[programName].filter(c => c !== consumer);
+    }
+  }
 
 
   let reconnectTimeout = null;
@@ -99,8 +112,13 @@ export default function useWebSocket() {
           runningProgramData.value = newData;
           break;
         case 'programdata':
-          perProgramSpecificData.value[data.program] = data.data;
-          console.log(data)
+          if(registeredMessageCallbacks.value[data.program]) {
+            for (let consumer of registeredMessageCallbacks.value[data.program]) {
+              consumer(data.data);
+            }
+          }
+          // perProgramSpecificData.value[data.program] = data.data;
+          // console.log(data)
           break;
       }
     };
@@ -170,6 +188,7 @@ export default function useWebSocket() {
     perProgramData,
     programSessions,
     runningProgramData,
-    perProgramSpecificData
+    registerMessageCallback,
+    unregisterMessageCallback,
   };
 }

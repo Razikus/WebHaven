@@ -9,13 +9,15 @@ public class PlayerHandler implements Connection.Callback, Runnable {
 
     private Connection connection;
     private String charName; // @TODO set to null to create character
-    private PseudoWidgetManager widgetManager = new PseudoWidgetManager();
+    private PseudoWidgetManager widgetManager;
     private ResourceManager resourceManager = new ResourceManager();
-    private ObjectManager objectManager = new ObjectManager(resourceManager, widgetManager);
+    private ObjectManager objectManager;
     private AtomicReference<WebHavenState> latestState = new AtomicReference<>();
     private PseudoGlobManager pseudoGlobManager = new PseudoGlobManager(resourceManager);
     private SimpleMapCache mapCache = new SimpleMapCache(resourceManager, this);
 
+    private ArrayList<ChatCallback> chatCallbacks = new ArrayList<>();
+    private ArrayList<ObjectChangeCallback> objectChangeCallbacks = new ArrayList<>();
 
 
 //    private SynchronousQueue<WebHavenState> queue = new SynchronousQueue<>();
@@ -28,6 +30,8 @@ public class PlayerHandler implements Connection.Callback, Runnable {
     public PlayerHandler(Connection connection, String charName) {
         this.connection = connection;
         this.charName = charName;
+        this.widgetManager = new PseudoWidgetManager(chatCallbacks);
+        this.objectManager = new ObjectManager(resourceManager, widgetManager, objectChangeCallbacks);
     }
 
 
@@ -241,5 +245,17 @@ public class PlayerHandler implements Connection.Callback, Runnable {
         }
         return new WebHavenState(objlist, chatChannels, ast);
 
+    }
+
+    public void addChatCallback(ChatCallback cb) {
+        synchronized (chatCallbacks) {
+            chatCallbacks.add(cb);
+        }
+    }
+
+    public void addObjectChangeCallback(ObjectChangeCallback cb) {
+        synchronized (objectChangeCallbacks) {
+            objectChangeCallbacks.add(cb);
+        }
     }
 }

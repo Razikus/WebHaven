@@ -21,6 +21,7 @@ public class WebHavenSession implements Runnable {
     private boolean shouldClose = false;
 
     private ArrayList<ChatCallback> initialChatCallbacks;
+    private ArrayList<ObjectChangeCallback> initialObjectChangeCallbacks;
 
     public WebHavenSession(String username, String password, String characterName) {
         this.username = username;
@@ -30,14 +31,26 @@ public class WebHavenSession implements Runnable {
         this.initialChatCallbacks = new ArrayList<>();
     }
 
+
+    public WebHavenSession(String username, String password, String characterName, ArrayList<ChatCallback> initialChatCallbacks, ArrayList<ObjectChangeCallback> initialObjectChangeCallbacks) {
+        this.username = username;
+        this.password = password;
+        this.characterName = characterName;
+        this.shouldClose = false;
+        this.initialChatCallbacks = initialChatCallbacks;
+        this.initialObjectChangeCallbacks = initialObjectChangeCallbacks;
+    }
+
     public WebHavenSession(String username, String password, String characterName, ArrayList<ChatCallback> initialChatCallbacks) {
         this.username = username;
         this.password = password;
         this.characterName = characterName;
         this.shouldClose = false;
         this.initialChatCallbacks = initialChatCallbacks;
-
+        this.initialObjectChangeCallbacks = new ArrayList<>();
     }
+
+
 
 
     public PseudoWidgetManager getWidgetManager() {
@@ -59,9 +72,18 @@ public class WebHavenSession implements Runnable {
             return false;
         }
 
-        this.getWidgetManager().addGlobalChatCallback(cb);
+        handler.addChatCallback(cb);
         return true;
 
+    }
+
+    public boolean addObjectChangeCallback(ObjectChangeCallback cb) {
+        if(handler == null) {
+            return false;
+        }
+
+        handler.addObjectChangeCallback(cb);
+        return true;
     }
 
     public PlayerHandler getHandler() {
@@ -103,6 +125,11 @@ public class WebHavenSession implements Runnable {
             if(this.initialChatCallbacks != null && !this.initialChatCallbacks.isEmpty()) {
                 for (ChatCallback cb: this.initialChatCallbacks) {
                     this.addChatCallback(cb);
+                }
+            }
+            if (this.initialObjectChangeCallbacks != null && !this.initialObjectChangeCallbacks.isEmpty()) {
+                for (ObjectChangeCallback cb: this.initialObjectChangeCallbacks) {
+                    this.addObjectChangeCallback(cb);
                 }
             }
             connection.add(this.handler);

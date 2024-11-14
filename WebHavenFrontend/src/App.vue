@@ -60,7 +60,8 @@ const {
   perProgramData,
   programSessions,
   runningProgramData,
-  perProgramSpecificData
+  registerMessageCallback,
+  unregisterMessageCallback
 } = useWebSocket();
 
 // Provide websocket functionality to all components
@@ -76,6 +77,7 @@ provide('websocket', {
   perProgramData,
   programSessions,
   runningProgramData,
-  perProgramSpecificData
+  registerMessageCallback,
+  unregisterMessageCallback
 });
 </script>
