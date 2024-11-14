@@ -94,7 +94,7 @@ public class PlayerHandler implements Connection.Callback, Runnable {
             PseudoWidget ps = new PseudoWidget(this, id, type, parent, pargs, cargs);
             widgetManager.addNewWidget(ps);
 //            System.out.println("NEWWDG: " + ps);
-            if (type.equals("charlist")) {
+            if (type.equals("charlist") && id < 20 ) { // @todo this is situation when you go to sleep in game and it goes into charlist again
                 sendMessageFromWidget(id, "play", charName);
             }
         } else if (msg.type == RMessage.RMSG_WDGMSG) {
@@ -222,8 +222,10 @@ public class PlayerHandler implements Connection.Callback, Runnable {
                 if(tick % 10 == 0) {
                     tick = 0;
                     antiAFK();
-                    System.out.println(this.objectManager.getPlayer().getCoordinate());
-                    this.mapCache.reqAreaAround(this.objectManager.getPlayer().getCoordinate(), 2);
+                    if(this.objectManager.getPlayer() != null) {
+                        System.out.println(this.objectManager.getPlayer().getCoordinate());
+                        this.mapCache.reqAreaAround(this.objectManager.getPlayer().getCoordinate(), 2);
+                    }
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
