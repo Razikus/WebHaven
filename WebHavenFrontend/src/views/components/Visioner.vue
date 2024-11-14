@@ -103,11 +103,9 @@ const handleMouseDown = (event) => {
   if(hoveredObject.value) {
     let meshId = -1
     if(hoveredObject.value.resources) {
-      console.log(hoveredObject.value.resources)
       for (const resource of hoveredObject.value.resources) {
         if (resource.layers) {
           for (const layer of resource.layers) {
-            console.log(layer)
             if (layer.type == 'mesh' && layer.id != -1) {
               meshId = layer.id;
             }
@@ -115,8 +113,6 @@ const handleMouseDown = (event) => {
         }
       }
     }
-    console.log('meshId', meshId);
-    meshId = -1;
     sendMessage("proginput", {
       program: programName.value,
       cmdType: 'gobclick',
