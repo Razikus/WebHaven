@@ -18,7 +18,7 @@
                     }})
                   </div>
                   <div v-for="(resource, index) in hoveredObject.resources" :key="index">
-                    {{ resource.information.name }}
+                    {{ resource.name }} {{resource.layers}}
                   </div>
                 </div>
                 <div v-else>
@@ -101,6 +101,22 @@ const handleMouseDown = (event) => {
 
   // Send click event through websocket
   if(hoveredObject.value) {
+    let meshId = -1
+    if(hoveredObject.value.resources) {
+      console.log(hoveredObject.value.resources)
+      for (const resource of hoveredObject.value.resources) {
+        if (resource.layers) {
+          for (const layer of resource.layers) {
+            console.log(layer)
+            if (layer.type == 'mesh' && layer.id != -1) {
+              meshId = layer.id;
+            }
+          }
+        }
+      }
+    }
+    console.log('meshId', meshId);
+    meshId = -1;
     sendMessage("proginput", {
       program: programName.value,
       cmdType: 'gobclick',
@@ -109,6 +125,7 @@ const handleMouseDown = (event) => {
       button: button,
       modifiers: modifiers,
       gobId: hoveredObject.value.id,
+      meshId: meshId
     });
   } else {
     sendMessage("proginput", {
@@ -117,7 +134,8 @@ const handleMouseDown = (event) => {
       x: Math.round(worldPos.x),
       y: Math.round(worldPos.y),
       button: button,
-      modifiers: modifiers
+      modifiers: modifiers,
+      meshId: -1
     });
 
   }
@@ -154,8 +172,14 @@ const handleMouseMove = (event) => {
           Math.pow(screenPos.x - x, 2) +
           Math.pow(screenPos.y - y, 2)
       );
+      let isWall = false;
+      for (const resource of obj.resources) {
+        if (resource.name == "gfx/terobjs/arch/hwall") {
+          isWall = true;
+        }
+      }
 
-      if (distance < minDistance) {
+      if ((distance < minDistance) && !isWall) {
         minDistance = distance;
         closest = obj;
       }
@@ -204,6 +228,7 @@ const drawMap = () => {
     ctx.stroke();
   }
 
+
   const programData = perProgramSpecificData.value?.[programName.value];
   if (programData) {
     Object.values(programData).forEach(obj => {
@@ -216,17 +241,17 @@ const drawMap = () => {
           let color = 'blue';
           let shape = 'circle';
           if (obj.resources && obj.resources.length > 0) {
-            if (obj.resources[0].information.name.includes('plant')) {
+            if (obj.resources[0].name.includes('plant')) {
               color = 'green';
-            } else if (obj.resources[0].information.name.includes('stockpile')) {
+            } else if (obj.resources[0].name.includes('stockpile')) {
               color = 'orange';
-            } else if (obj.resources[0].information.name.includes('body')) {
+            } else if (obj.resources[0].name.includes('body')) {
               color = 'red';
               pingSize = 5;
-            } else if (obj.resources[0].information.name.includes('palisadeseg')) {
+            } else if (obj.resources[0].name.includes('palisadeseg')) {
               color = 'brown';
               shape = 'square';
-            } else if (obj.resources[0].information.name.includes('palisadecp')) {
+            } else if (obj.resources[0].name.includes('palisadecp')) {
               color = 'brown';
               pingSize = 5;
               shape = 'square';
@@ -241,6 +266,50 @@ const drawMap = () => {
             ctx.rect(screenPos.x - pingSize, screenPos.y - pingSize, pingSize * 2, pingSize * 2);
           }
           ctx.fill();
+
+          if (obj.resources) {
+            for (const resource of obj.resources) {
+              if (resource.layers) {
+                for (const layer of resource.layers) {
+                  if (layer.type == 'obstacle') {
+                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                    ctx.lineWidth = 1;
+
+                    for (const obstacle of layer.obstacle) {
+                      if (obstacle.length > 0) {
+                        // Calculate center of obstacle
+                        let centerX = 0, centerY = 0;
+                        for (const point of obstacle) {
+                          centerX += point.x;
+                          centerY += point.y;
+                        }
+                        centerX /= obstacle.length;
+                        centerY /= obstacle.length;
+
+                        ctx.save();
+                        ctx.translate(screenPos.x + centerX, screenPos.y + centerY);
+                        ctx.rotate(obj.angle || 0);
+                        ctx.translate(-centerX, -centerY);
+
+                        ctx.beginPath();
+                        const firstPoint = obstacle[0];
+                        ctx.moveTo(firstPoint.x, firstPoint.y);
+
+                        for (let i = 1; i < obstacle.length; i++) {
+                          const point = obstacle[i];
+                          ctx.lineTo(point.x, point.y);
+                        }
+
+                        ctx.lineTo(firstPoint.x, firstPoint.y);
+                        ctx.stroke();
+                        ctx.restore();
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     });

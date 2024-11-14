@@ -155,14 +155,11 @@ public class AroundVisionProgram extends AbstractProgram{
                 int button1 = command.get("button").getAsInt();
                 int modifiers1 = command.get("modifiers").getAsInt();
                 Long gobId = command.get("gobId").getAsLong();
+                int meshid = command.get("meshId").getAsInt();
 
                 PseudoObject gob = session.getHandler().getObjectManager().getPseudoObjectHashMap().get(gobId);
-                System.out.println("Raw click coordinates: " + rawX1 + ", " + rawY1);
-                System.out.println("Gob position: " + gob.getCoordinate());
-                System.out.println("Gob angle: " + gob.getAngle());
                 Coord2d gobCoord = gob.getCoordinate();
                 Coord2d relativeClick = new Coord2d(38.0, 0.0);
-                System.out.println("Before rotation relative click: " + relativeClick);
                 if (gob.getAngle() != 0) {
                     double cos = Math.cos(gob.getAngle());
                     double sin = Math.sin(gob.getAngle());
@@ -170,20 +167,13 @@ public class AroundVisionProgram extends AbstractProgram{
                             relativeClick.x * cos - relativeClick.y * sin,
                             relativeClick.x * sin + relativeClick.y * cos
                     );
-                    System.out.println("After rotation relative click: " + relativeClick);
                 }
                 Coord2d worldClickPos = gobCoord.add(relativeClick);  // Only add once!
-                System.out.println("World click position: " + worldClickPos);
 
                 Coord gobCoordPosRes = gobCoord.floor(posres);
                 Coord clickCoord1 = worldClickPos.floor(posres);
 
-                System.out.println("Floored gob coord: " + gobCoordPosRes);
-                System.out.println("Floored click coord: " + clickCoord1);
-
                 Coord pc = new Coord((int)rawX1, (int)rawY1);
-                // @todo currently NOT supporting overlays
-                System.out.println(pc);
                 Object[] args1 = new Object[] {
                         pc,                 // screen coordinate
                         clickCoord1,        // clicked map coordinate
@@ -193,7 +183,7 @@ public class AroundVisionProgram extends AbstractProgram{
                         gobId,              // clicked gob ID
                         gobCoordPosRes,
                         0,
-                        -1
+                        meshid
                 };
 //                click: [(733, 407), (-965701, -975892), 3, 0, 0, 1648077781, (-965632, -978944), 0, 16] in
  //               click: [(725, 615), (-970284, -972670), 3, 0, 0, 1868781591, (-969728, -972800), 0, -1] out

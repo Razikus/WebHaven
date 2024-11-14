@@ -1,10 +1,7 @@
 package tech.razikus.headlesshaven;
 
 import com.google.gson.*;
-import haven.Coord2d;
-import haven.Message;
-import haven.MessageBuf;
-import haven.OCache;
+import haven.*;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -51,6 +48,11 @@ public class PseudoObject {
         }
         return found;
     }
+
+    public ResourceManager getResourceManager() {
+        return manager;
+    }
+
 
     public boolean isVillageBuddy() {
         boolean found = false;
@@ -366,13 +368,18 @@ class PseudoObjectSerializer implements JsonSerializer<PseudoObject> {
 
         // Serialize basic fields
         json.addProperty("id", src.getId());
+        json.addProperty("angle", src.getAngle());
 
         // Handle resourceInformationLazyProxies
         JsonArray resources = new JsonArray();
         for (ResourceInformationLazyProxy proxy : src.getResourceInformationLazyProxies()) {
+            Resource realResource = src.getResourceManager().getRealResource(proxy.getResID());
+            if(realResource != null) {
+                resources.add(context.serialize(realResource));
+            }
             // Get the actual resource data
-            InstantiatedResourceInformation resource = proxy.getResource();
-            resources.add(context.serialize(resource));
+//            InstantiatedResourceInformation resource = proxy.getResource();
+//            resources.add(context.serialize(resource));
         }
         json.add("resources", resources);
 
