@@ -1,6 +1,7 @@
 package tech.razikus.headlesshaven;
 
 import com.google.gson.*;
+import haven.Resource;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
 import io.javalin.json.JsonMapper;
@@ -12,6 +13,8 @@ import tech.razikus.headlesshaven.bot.automation.WebHavenSessionInformer;
 import tech.razikus.headlesshaven.script.GroovyScriptEngine;
 
 import java.lang.reflect.Type;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
