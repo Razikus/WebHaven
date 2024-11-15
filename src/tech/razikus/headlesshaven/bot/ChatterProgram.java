@@ -4,11 +4,13 @@ import tech.razikus.headlesshaven.ChatCallback;
 import tech.razikus.headlesshaven.WebHavenSession;
 import tech.razikus.headlesshaven.WebHavenSessionManager;
 import tech.razikus.headlesshaven.WebHavenState;
+import tech.razikus.headlesshaven.bot.automation.AutoLoginCharCallback;
 import tech.razikus.headlesshaven.bot.automation.BrodcastingChatCallback;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ChatterProgram extends AbstractProgram{
 
@@ -36,7 +38,7 @@ public class ChatterProgram extends AbstractProgram{
             }
 
             ChatCallback chatStreamer = new BrodcastingChatCallback(this.getManager(), sessName);
-            ArrayList<ChatCallback> callbacks = new ArrayList<>();
+            CopyOnWriteArrayList<ChatCallback> callbacks = new CopyOnWriteArrayList<>();
             callbacks.add(chatStreamer);
             WebHavenSession session = new WebHavenSession(username, password, altname, callbacks);
             try {
@@ -45,6 +47,7 @@ public class ChatterProgram extends AbstractProgram{
                 setShouldClose(true);
                 return;
             }
+            session.addWidgetCallback(new AutoLoginCharCallback(altname, session));
 
             Thread sessionThread = new Thread(session);
             sessionThread.start();

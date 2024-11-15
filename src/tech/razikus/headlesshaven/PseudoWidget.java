@@ -35,7 +35,7 @@ public class PseudoWidget {
     }
 
     public void ReceiveMessage(WidgetMessage message) {
-        System.out.println("UNHANDLED WIDGET: " + this.getType() + " RECEIVED MESSAGE: " + this + ": " + message );
+//        System.out.println("UNHANDLED WIDGET: " + this.getType() + " RECEIVED MESSAGE: " + this + ": " + message );
 
     }
 

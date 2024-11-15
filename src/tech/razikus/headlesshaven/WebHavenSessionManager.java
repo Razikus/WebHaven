@@ -329,13 +329,13 @@ public class WebHavenSessionManager {
         });
         System.out.println("INITIALIZATION COMPLETE");
         if(!initialUser.isEmpty()) {
-            if(initialPassword.isEmpty() || initialChar.isEmpty()) {
+            if(initialPassword.isEmpty() ) {
                 throw new RuntimeException("IF AUTOLOGIN_USER IS NOT EMPTY THEN AUTOLOGIN_PASSWORD AND  AUTOLOGIN_CHAR MUST BE NOT EMPTY");
             }
             try {
                 Credential credentials = new Credential(initialUser, initialPassword, initialChar);
-                String progname = ChatterProgram.class.getName();
-                AbstractProgram program = new AroundVisionProgram(progname, sessionManager, credentials, new HashMap<>());
+                String progname = CreateAltProgram.class.getName();
+                AbstractProgram program = new CreateAltProgram(progname, sessionManager, credentials, new HashMap<>());
                 sessionManager.startProgram(program);
             } catch (InterruptedException e) {
                 System.out.println("CANNOT AUTHENTICATE INITIAL USER OR SOMETHING: " + e);

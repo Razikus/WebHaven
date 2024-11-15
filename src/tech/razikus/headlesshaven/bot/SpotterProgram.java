@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class SpotterProgram extends AbstractProgram{
 
@@ -41,7 +42,7 @@ public class SpotterProgram extends AbstractProgram{
                 return;
             }
 
-            WebHavenSession session = new WebHavenSession(username, password, altname, new ArrayList<>());
+            WebHavenSession session = new WebHavenSession(username, password, altname, new CopyOnWriteArrayList<>());
             try {
                 session.authenticate();
             } catch (InterruptedException e) {

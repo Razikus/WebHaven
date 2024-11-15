@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PseudoWidgetManager {
     final private HashMap<Integer, PseudoWidget> pseudoWidgetHashMap = new HashMap<>();
@@ -13,10 +14,10 @@ public class PseudoWidgetManager {
     private HashMap<Integer, ChatPseudoWidget> chatWidgets = new HashMap<>();
     private HashMap<Integer, FlowerMenuPseudoWidget> flowerMenus = new HashMap<>();
 
-    private ArrayList<ChatCallback> callbacks;
+    private CopyOnWriteArrayList<ChatCallback> callbacks;
 
-    private ArrayList<PseudoWidgetErrorCallback> errorCallbacks = new ArrayList<>();
-
+    private CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks;
+    private CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks;
     private MapViewPseudoWidget mapView = null;
 
 
@@ -29,9 +30,10 @@ public class PseudoWidgetManager {
     private String myCharacter;
 
 
-    public PseudoWidgetManager(ArrayList<ChatCallback> callbacks, ArrayList<PseudoWidgetErrorCallback> errorCallbacks) {
+    public PseudoWidgetManager(CopyOnWriteArrayList<ChatCallback> callbacks, CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks, CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks) {
         this.callbacks = callbacks;
         this.errorCallbacks = errorCallbacks;
+        this.widgetCallbacks = widgetCallbacks;
     }
 
 
@@ -59,9 +61,12 @@ public class PseudoWidgetManager {
                 found.ReceiveMessage(message);
             } else {
                 if(message.getName().equals("err")) {
-                    for (PseudoWidgetErrorCallback cb: errorCallbacks) {
-                        cb.onError((String) message.getArgs()[0]);
+                    synchronized (errorCallbacks) {
+                        for (PseudoWidgetErrorCallback cb: errorCallbacks) {
+                            cb.onError((String) message.getArgs()[0]);
+                        }
                     }
+                    System.out.println("ERROR: " + message);
 
                 } else {
                     System.out.println("WIDGET NOT FOUND: " + message);
@@ -110,7 +115,6 @@ public class PseudoWidgetManager {
     }
 
     public void addNewWidget(PseudoWidget widget) {
-        System.out.println("NEW WIDGET: " + widget);
         synchronized (pseudoWidgetHashMap) {
             PseudoWidget toAdd = widget;
             if(widget.type.startsWith("ui/vlg:")) {
@@ -151,7 +155,13 @@ public class PseudoWidgetManager {
                     mapView = new MapViewPseudoWidget(widget);
                     break;
             }
+            synchronized (widgetCallbacks) {
+                for (PseudoWidgetCallback cb: widgetCallbacks) {
+                    cb.onWidgetCreated(toAdd);
+                }
+            }
             pseudoWidgetHashMap.put(widget.id, toAdd);
+            System.out.println("ADDED WIDGET: " + toAdd);
         }
     }
 
@@ -180,6 +190,9 @@ public class PseudoWidgetManager {
             }
             chatWidgets.remove(widgetId);
             flowerMenus.remove(widgetId);
+            widgetCallbacks.forEach(cb -> cb.onWidgetDestroyed(widgetId));
+
+
         }
         System.out.println("REMOVED WIDGET: " + widgetId);
     }
@@ -197,7 +210,21 @@ public class PseudoWidgetManager {
     }
 
     public void addErrorCallback(PseudoWidgetErrorCallback callback) {
-        errorCallbacks.add(callback);
+        synchronized (errorCallbacks) {
+            errorCallbacks.add(callback);
+        }
+    }
+
+    public void addWidgetCallback(PseudoWidgetCallback callback) {
+        synchronized (widgetCallbacks) {
+            widgetCallbacks.add(callback);
+        }
+    }
+
+    public void removeWidgetCallback(PseudoWidgetCallback callback) {
+        synchronized (widgetCallbacks) {
+            widgetCallbacks.remove(callback);
+        }
     }
 
 }

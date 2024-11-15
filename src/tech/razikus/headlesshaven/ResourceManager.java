@@ -61,6 +61,7 @@ class ResourceSerializer implements JsonSerializer<Resource> {
         json.addProperty("name", src.name);
         json.addProperty("version", src.ver);
         JsonArray layers = new JsonArray();
+
         for (FastMesh.MeshRes layer: src.layers(FastMesh.MeshRes.class)) {
             JsonObject mesh = new JsonObject();
             FastMesh.MeshRes meshRes = layer;
@@ -94,4 +95,5 @@ class ResourceSerializer implements JsonSerializer<Resource> {
         }
         return array;
     }
+
 }

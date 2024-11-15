@@ -4,12 +4,14 @@ import com.google.gson.JsonObject;
 import haven.Coord;
 import haven.Coord2d;
 import tech.razikus.headlesshaven.*;
+import tech.razikus.headlesshaven.bot.automation.AutoLoginCharCallback;
 import tech.razikus.headlesshaven.bot.automation.DiscordWebhook;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static haven.OCache.posres;
 
@@ -43,19 +45,20 @@ public class AroundVisionProgram extends AbstractProgram{
             }
 
             ErrorSenderCallback errorSenderCallback = new ErrorSenderCallback(manager, this.getProgname());
-            ArrayList<PseudoWidgetErrorCallback> errorCallbacks = new ArrayList<>();
+            CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks = new CopyOnWriteArrayList<>();
             errorCallbacks.add(errorSenderCallback);
 
             ObjectChangeCallback callback = new ObjectSenderCallback(manager, this.getProgname());
-            ArrayList<ObjectChangeCallback> callbacks = new ArrayList<>();
+            CopyOnWriteArrayList<ObjectChangeCallback> callbacks = new CopyOnWriteArrayList<>();
             callbacks.add(callback);
-            WebHavenSession session = new WebHavenSession(username, password, altname, new ArrayList<>(), callbacks, errorCallbacks);
+            WebHavenSession session = new WebHavenSession(username, password, altname, new CopyOnWriteArrayList<>(), callbacks, errorCallbacks, new CopyOnWriteArrayList<>());
             try {
                 session.authenticate();
             } catch (InterruptedException e) {
                 setShouldClose(true);
                 return;
             }
+            session.addWidgetCallback(new AutoLoginCharCallback(altname, session));
 
             Thread sessionThread = new Thread(session);
             sessionThread.start();
@@ -74,7 +77,7 @@ public class AroundVisionProgram extends AbstractProgram{
             this.getManager().getSessions().remove(sessName);
 
             try {
-                Thread.sleep(1000 * 60);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 setShouldClose(true);
             }

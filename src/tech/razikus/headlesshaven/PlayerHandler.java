@@ -3,12 +3,12 @@ package tech.razikus.headlesshaven;
 import haven.*;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PlayerHandler implements Connection.Callback, Runnable {
 
     private Connection connection;
-    private String charName; // @TODO set to null to create character
     private PseudoWidgetManager widgetManager;
     private ResourceManager resourceManager = new ResourceManager();
     private ObjectManager objectManager;
@@ -16,9 +16,10 @@ public class PlayerHandler implements Connection.Callback, Runnable {
     private PseudoGlobManager pseudoGlobManager = new PseudoGlobManager(resourceManager);
     private SimpleMapCache mapCache = new SimpleMapCache(resourceManager, this);
 
-    private ArrayList<ChatCallback> chatCallbacks = new ArrayList<>();
-    private ArrayList<ObjectChangeCallback> objectChangeCallbacks = new ArrayList<>();
-    private ArrayList<PseudoWidgetErrorCallback> errorCallbacks = new ArrayList<>();
+    private CopyOnWriteArrayList<ChatCallback> chatCallbacks = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<ObjectChangeCallback> objectChangeCallbacks = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks = new CopyOnWriteArrayList<>();
 
 
 //    private SynchronousQueue<WebHavenState> queue = new SynchronousQueue<>();
@@ -30,11 +31,14 @@ public class PlayerHandler implements Connection.Callback, Runnable {
 
     public PlayerHandler(Connection connection, String charName) {
         this.connection = connection;
-        this.charName = charName;
-        this.widgetManager = new PseudoWidgetManager(chatCallbacks, errorCallbacks);
+        this.widgetManager = new PseudoWidgetManager(chatCallbacks, errorCallbacks, widgetCallbacks);
         this.objectManager = new ObjectManager(resourceManager, widgetManager, objectChangeCallbacks);
+
     }
 
+    public SimpleMapCache getMapCache() {
+        return mapCache;
+    }
 
     public WebHavenState getLastState() {
         return latestState.get();
@@ -93,10 +97,6 @@ public class PlayerHandler implements Connection.Callback, Runnable {
             Object[] cargs = msg.list();
             PseudoWidget ps = new PseudoWidget(this, id, type, parent, pargs, cargs);
             widgetManager.addNewWidget(ps);
-//            System.out.println("NEWWDG: " + ps);
-            if (type.equals("charlist") && id < 20 ) { // @todo this is situation when you go to sleep in game and it goes into charlist again
-                sendMessageFromWidget(id, "play", charName);
-            }
         } else if (msg.type == RMessage.RMSG_WDGMSG) {
             int id = msg.int32();
             String name = msg.string();
@@ -213,17 +213,26 @@ public class PlayerHandler implements Connection.Callback, Runnable {
             }
         }
         int tick = 1;
+        int requestTick = 1;
+        boolean wasRequested = false;
         while(connection.alive() && !connClosed) {
             try {
                 Thread.sleep(1000);
                 WebHavenState currentState = getWebHavenState();
                 latestState.set(currentState);
                 tick++;
+                requestTick++;
                 if(tick % 10 == 0) {
                     tick = 0;
                     antiAFK();
+                }
+                if(!wasRequested && this.objectManager.getPlayer() != null && this.objectManager.getPlayer().getCoordinate() != null ) {
+                    this.mapCache.reqAreaAround(this.objectManager.getPlayer().getCoordinate(), 2);
+                    wasRequested = true;
+                }
+                if (requestTick % 60 == 0) {
+                    requestTick = 0;
                     if(this.objectManager.getPlayer() != null) {
-                        System.out.println(this.objectManager.getPlayer().getCoordinate());
                         this.mapCache.reqAreaAround(this.objectManager.getPlayer().getCoordinate(), 2);
                     }
                 }
@@ -265,6 +274,12 @@ public class PlayerHandler implements Connection.Callback, Runnable {
     public void addErrorCallback(PseudoWidgetErrorCallback cb) {
         synchronized (errorCallbacks) {
             errorCallbacks.add(cb);
+        }
+    }
+
+    public void addWidgetCallback(PseudoWidgetCallback cb) {
+        synchronized (widgetCallbacks) {
+            widgetCallbacks.add(cb);
         }
     }
 }

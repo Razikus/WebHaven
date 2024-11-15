@@ -4,15 +4,16 @@ import haven.OCache;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ObjectManager {
 
     private ResourceManager resourceManager;
     private PseudoWidgetManager widgetManager;
-    private ArrayList<ObjectChangeCallback> callbacks = new ArrayList<>();
+    private CopyOnWriteArrayList<ObjectChangeCallback> callbacks;
 
 
-    public ObjectManager(ResourceManager resourceManager, PseudoWidgetManager widgetManager, ArrayList<ObjectChangeCallback> callbacks) {
+    public ObjectManager(ResourceManager resourceManager, PseudoWidgetManager widgetManager, CopyOnWriteArrayList<ObjectChangeCallback> callbacks) {
         this.resourceManager = resourceManager;
         this.widgetManager = widgetManager;
         this.callbacks = callbacks;
@@ -63,13 +64,15 @@ public class ObjectManager {
 
     public void handleRealDelta(long id, OCache.ObjDelta delta) {
         PseudoObject obj = pseudoObjectHashMap.get(id);
+        if(obj.getId() == widgetManager.getMyGOBId()) {
+            obj.setMyself(true);
+        }
         obj.fillDelta(delta);
     }
 
     public void handleDelta(OCache.ObjDelta delta) {
         if (delta.rem) {
             removeObject(delta.id);
-            System.out.println("OBJECT REMOVED: " + delta.id);
             for (ObjectChangeCallback cb : callbacks) {
                 cb.objectRemoved(delta.id);
             }
@@ -81,6 +84,9 @@ public class ObjectManager {
                 PseudoObject obj = new PseudoObject(resourceManager, widgetManager, delta.id);
                 obj.fillNew(delta);
                 addObject(obj);
+                if(obj.getId() == widgetManager.getMyGOBId()) {
+                    obj.setMyself(true);
+                }
                 for (ObjectChangeCallback cb : callbacks) {
                     cb.objectAdded(obj);
                 }

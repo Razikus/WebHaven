@@ -6,8 +6,10 @@ import haven.Resource;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -117,23 +119,14 @@ public class ShareableResourceHammer implements  Runnable {
             try {
                 info = resourceInformationQueue.take();
                 Resource resource = Resource.remote().loadwait(info.getName(), info.getVersion());
+
                 resourceHashMap.put(info, resource);
                 String name = info.getName();
-//                resource.layers(Resource.Image.class).forEach(layer -> {
-//                    try {
-//
-//                        String safename = name.replaceAll("[^a-zA-Z0-9]", "_");
-//                        System.out.println(safename);
-//                        File file = new File("ttt/" + safename + ".png");
-//                        ImageIO.write(layer.img, "png", file);
-//                    } catch (IOException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                });
             } catch (InterruptedException e) {
                 this.shouldClose = true;
             }
         }
 
     }
+
 }

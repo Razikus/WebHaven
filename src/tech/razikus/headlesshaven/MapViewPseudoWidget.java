@@ -4,6 +4,8 @@ import haven.Coord;
 
 import java.util.Arrays;
 
+import static haven.OCache.posres;
+
 public class MapViewPseudoWidget extends PseudoWidget{
     public MapViewPseudoWidget(PseudoWidget original) {
         super(original);
@@ -33,6 +35,63 @@ public class MapViewPseudoWidget extends PseudoWidget{
                 gobCoordPosres,
                 overlayIdToSend,
                 meshid
+        };
+        System.out.println("GobClick: " + Arrays.toString(args));
+        this.WidgetMsg("click", args);
+    }
+
+
+    public void gobClick(Coord pixelCord, PseudoObject obj, int button, int modifiers, boolean isOverlay, int overlayId, int meshid) {
+        int overlay = 0;
+        int overlayIdToSend = 0;
+        if(isOverlay) {
+            overlay = 1;
+            overlayIdToSend = overlayId;
+        }
+        Coord gobCoordPosRes = obj.getCoordinate().floor(posres);
+        Object[] args = new Object[] {
+                pixelCord,                 // screen coordinate
+                gobCoordPosRes,        // clicked map coordinate
+                button,            // button pressed
+                modifiers,         // modifier keys
+                overlay, // clickargs of GobClick extends Clickabl in Gob.java
+                obj.getId(),              // clicked gob ID
+                gobCoordPosRes,
+                overlayIdToSend,
+                meshid
+        };
+        System.out.println("GobClick: " + Arrays.toString(args));
+        this.WidgetMsg("click", args);
+    }
+
+    public void gobClickL(PseudoObject obj) {
+        Coord gobCoordPosRes = obj.getCoordinate().floor(posres);
+        Object[] args = new Object[] {
+                gobCoordPosRes,                 // screen coordinate
+                gobCoordPosRes,        // clicked map coordinate
+                0,            // button pressed
+                0,         // modifier keys
+                0, // clickargs of GobClick extends Clickabl in Gob.java
+                obj.getId(),              // clicked gob ID
+                gobCoordPosRes,
+                0,
+                -1
+        };
+        System.out.println("GobClick: " + Arrays.toString(args));
+        this.WidgetMsg("click", args);
+    }
+    public void gobClickR(PseudoObject obj) {
+        Coord gobCoordPosRes = obj.getCoordinate().floor(posres);
+        Object[] args = new Object[] {
+                gobCoordPosRes,                 // screen coordinate
+                gobCoordPosRes,        // clicked map coordinate
+                3,            // button pressed
+                0,         // modifier keys
+                0, // clickargs of GobClick extends Clickabl in Gob.java
+                obj.getId(),              // clicked gob ID
+                gobCoordPosRes,
+                0,
+                -1
         };
         System.out.println("GobClick: " + Arrays.toString(args));
         this.WidgetMsg("click", args);

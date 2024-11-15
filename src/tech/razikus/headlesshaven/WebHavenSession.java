@@ -4,6 +4,7 @@ import haven.Connection;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class WebHavenSession implements Runnable {
     private String username;
@@ -20,21 +21,23 @@ public class WebHavenSession implements Runnable {
 
     private boolean shouldClose = false;
 
-    private ArrayList<ChatCallback> initialChatCallbacks;
-    private ArrayList<ObjectChangeCallback> initialObjectChangeCallbacks;
-    private ArrayList<PseudoWidgetErrorCallback> errorCallbacks = new ArrayList<>();
+    private CopyOnWriteArrayList<ChatCallback> initialChatCallbacks;
+    private CopyOnWriteArrayList<ObjectChangeCallback> initialObjectChangeCallbacks;
+    private CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks;
+    private CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks;
 
     public WebHavenSession(String username, String password, String characterName) {
         this.username = username;
         this.password = password;
         this.characterName = characterName;
         this.shouldClose = false;
-        this.initialChatCallbacks = new ArrayList<>();
-        this.initialObjectChangeCallbacks = new ArrayList<>();
-        this.errorCallbacks = new ArrayList<>();
+        this.initialChatCallbacks = new CopyOnWriteArrayList<>();
+        this.initialObjectChangeCallbacks = new CopyOnWriteArrayList<>();
+        this.errorCallbacks = new CopyOnWriteArrayList<>();
+        this.widgetCallbacks = new CopyOnWriteArrayList<>();
     }
 
-    public WebHavenSession(String username, String password, String characterName, ArrayList<ChatCallback> initialChatCallbacks, ArrayList<ObjectChangeCallback> initialObjectChangeCallbacks, ArrayList<PseudoWidgetErrorCallback> errorCallbacks) {
+    public WebHavenSession(String username, String password, String characterName, CopyOnWriteArrayList<ChatCallback> initialChatCallbacks, CopyOnWriteArrayList<ObjectChangeCallback> initialObjectChangeCallbacks, CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks, CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks) {
         this.username = username;
         this.password = password;
         this.characterName = characterName;
@@ -42,26 +45,29 @@ public class WebHavenSession implements Runnable {
         this.initialChatCallbacks = initialChatCallbacks;
         this.initialObjectChangeCallbacks = initialObjectChangeCallbacks;
         this.errorCallbacks = errorCallbacks;
+        this.widgetCallbacks = widgetCallbacks;
     }
 
-    public WebHavenSession(String username, String password, String characterName, ArrayList<ChatCallback> initialChatCallbacks, ArrayList<ObjectChangeCallback> initialObjectChangeCallbacks) {
+    public WebHavenSession(String username, String password, String characterName, CopyOnWriteArrayList<ChatCallback> initialChatCallbacks, CopyOnWriteArrayList<ObjectChangeCallback> initialObjectChangeCallbacks) {
         this.username = username;
         this.password = password;
         this.characterName = characterName;
         this.shouldClose = false;
         this.initialChatCallbacks = initialChatCallbacks;
         this.initialObjectChangeCallbacks = initialObjectChangeCallbacks;
-        this.errorCallbacks = new ArrayList<>();
+        this.errorCallbacks = new CopyOnWriteArrayList<>();
+        this.widgetCallbacks = new CopyOnWriteArrayList<>();
     }
 
-    public WebHavenSession(String username, String password, String characterName, ArrayList<ChatCallback> initialChatCallbacks) {
+    public WebHavenSession(String username, String password, String characterName, CopyOnWriteArrayList<ChatCallback> initialChatCallbacks) {
         this.username = username;
         this.password = password;
         this.characterName = characterName;
         this.shouldClose = false;
         this.initialChatCallbacks = initialChatCallbacks;
-        this.initialObjectChangeCallbacks = new ArrayList<>();
-        this.errorCallbacks = new ArrayList<>();
+        this.initialObjectChangeCallbacks = new CopyOnWriteArrayList<>();
+        this.errorCallbacks = new CopyOnWriteArrayList<>();
+        this.widgetCallbacks = new CopyOnWriteArrayList<>();
     }
 
 
@@ -84,6 +90,7 @@ public class WebHavenSession implements Runnable {
 
     public boolean addChatCallback(ChatCallback cb) {
         if(handler == null) {
+            initialChatCallbacks.add(cb);
             return false;
         }
 
@@ -94,6 +101,7 @@ public class WebHavenSession implements Runnable {
 
     public boolean addObjectChangeCallback(ObjectChangeCallback cb) {
         if(handler == null) {
+            initialObjectChangeCallbacks.add(cb);
             return false;
         }
 
@@ -103,6 +111,7 @@ public class WebHavenSession implements Runnable {
 
     public boolean addErrorCallback(PseudoWidgetErrorCallback cb) {
         if(handler == null) {
+            errorCallbacks.add(cb);
             return false;
         }
 
@@ -161,6 +170,11 @@ public class WebHavenSession implements Runnable {
                     this.addErrorCallback(cb);
                 }
             }
+            if (this.widgetCallbacks != null && !this.widgetCallbacks.isEmpty()) {
+                for (PseudoWidgetCallback cb: this.widgetCallbacks) {
+                    this.addWidgetCallback(cb);
+                }
+            }
             connection.add(this.handler);
             connection.connect(this.authResponse.getCookie());
             new Thread(this.handler).start();
@@ -178,4 +192,14 @@ public class WebHavenSession implements Runnable {
             shouldClose = true;
         }
     }
+
+    public void addWidgetCallback(PseudoWidgetCallback cb) {
+        if(handler == null) {
+            widgetCallbacks.add(cb);
+            return;
+        }
+        handler.addWidgetCallback(cb);
+    }
+
+
 }

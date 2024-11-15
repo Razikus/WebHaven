@@ -13,6 +13,14 @@ public class SimpleMapCache {
     private PlayerHandler handler;
     private Map<Integer, NameVersion> tileResources = new HashMap<>();
 
+    public GridData get(Coord gridCoord) {
+        return grids.get(gridCoord);
+    }
+
+    public Map<Coord, GridData> getGrids() {
+        return new HashMap<>(grids);
+    }
+
 
     class Defrag {
         private final byte[] buf;
@@ -213,6 +221,7 @@ public class SimpleMapCache {
         GridData grid = grids.computeIfAbsent(c, GridData::new);
         grid.fill(msg);
     }
+
 
 
 

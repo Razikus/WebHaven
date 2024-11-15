@@ -3,8 +3,10 @@ package tech.razikus.headlesshaven;
 import com.google.gson.*;
 import haven.*;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -25,8 +27,16 @@ public class PseudoObject {
     private List<CompositeModification> compositeModifications = new ArrayList<>();
     private CompositePoseState poseState = new CompositePoseState();
 
+    private boolean isMyself = false;
 
 
+    public boolean isMyself() {
+        return isMyself;
+    }
+
+    public void setMyself(boolean myself) {
+        isMyself = myself;
+    }
 
     public PseudoObject(ResourceManager manager, PseudoWidgetManager widgetManager, long id) {
         this.id = id;
@@ -118,22 +128,15 @@ public class PseudoObject {
         return resourceInformationLazyProxies;
     }
 
+    public List<CompositeModification> getCompositeModifications() {
+        return compositeModifications;
+    }
+
     public void fillDelta(OCache.ObjDelta delta) {
         if(delta.rem) {
             throw new RuntimeException("Never fill with object marked to remove");
         }
         fillNew(delta); // probably this is enough?
-
-//        for (OCache.AttrDelta attr: delta.attrs) {
-//            switch (attr.type) {
-//                case OCache.OD_MOVE:
-//                    handleMove(delta, attr);
-//                    break;
-//                default:
-////                    System.out.println("NOT SUPPORTED YET: " + MessageParser.getODName(attr.type));
-//                    break;
-//            }
-//        }
 
 
     }
