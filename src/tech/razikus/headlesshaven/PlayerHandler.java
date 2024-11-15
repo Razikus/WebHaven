@@ -29,7 +29,7 @@ public class PlayerHandler implements Connection.Callback, Runnable {
 
     private long started;
 
-    public PlayerHandler(Connection connection, String charName) {
+    public PlayerHandler(Connection connection) {
         this.connection = connection;
         this.widgetManager = new PseudoWidgetManager(chatCallbacks, errorCallbacks, widgetCallbacks);
         this.objectManager = new ObjectManager(resourceManager, widgetManager, objectChangeCallbacks);

@@ -30,6 +30,19 @@ public class CreateAltProgram extends AbstractProgram{
 
     private MapRenderer mapRenderer;
 
+    public void sendMessageProg(String what) {
+        this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
+                "message",
+                what
+        ));
+    }
+
+    public void sendStateProg(String what) {
+        this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
+                "state",
+                what
+        ));
+    }
 
     @Override
     public void run() {
@@ -46,7 +59,7 @@ public class CreateAltProgram extends AbstractProgram{
                 return;
             }
 
-            WebHavenSession session = new WebHavenSession(username, password, altname);
+            WebHavenSession session = new WebHavenSession(username, password);
             try {
                 session.authenticate();
             } catch (InterruptedException e) {

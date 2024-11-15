@@ -9,7 +9,7 @@ public class Main {
         String username = "";
         String password = "";
         String altname = "";
-        WebHavenSession session = new WebHavenSession(username, password, altname);
+        WebHavenSession session = new WebHavenSession(username, password);
         session.authenticate();
 
         Thread sessionThread = new Thread(session);

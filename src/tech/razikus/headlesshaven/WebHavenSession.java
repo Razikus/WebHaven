@@ -9,7 +9,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class WebHavenSession implements Runnable {
     private String username;
     private String password;
-    private String characterName; // @TODO Set to null to trigger new character creation
 
     private String host = "game.havenandhearth.com";
     private int mainPort = 1870;
@@ -26,10 +25,9 @@ public class WebHavenSession implements Runnable {
     private CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks;
     private CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks;
 
-    public WebHavenSession(String username, String password, String characterName) {
+    public WebHavenSession(String username, String password) {
         this.username = username;
         this.password = password;
-        this.characterName = characterName;
         this.shouldClose = false;
         this.initialChatCallbacks = new CopyOnWriteArrayList<>();
         this.initialObjectChangeCallbacks = new CopyOnWriteArrayList<>();
@@ -37,10 +35,9 @@ public class WebHavenSession implements Runnable {
         this.widgetCallbacks = new CopyOnWriteArrayList<>();
     }
 
-    public WebHavenSession(String username, String password, String characterName, CopyOnWriteArrayList<ChatCallback> initialChatCallbacks, CopyOnWriteArrayList<ObjectChangeCallback> initialObjectChangeCallbacks, CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks, CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks) {
+    public WebHavenSession(String username, String password, CopyOnWriteArrayList<ChatCallback> initialChatCallbacks, CopyOnWriteArrayList<ObjectChangeCallback> initialObjectChangeCallbacks, CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks, CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks) {
         this.username = username;
         this.password = password;
-        this.characterName = characterName;
         this.shouldClose = false;
         this.initialChatCallbacks = initialChatCallbacks;
         this.initialObjectChangeCallbacks = initialObjectChangeCallbacks;
@@ -48,10 +45,9 @@ public class WebHavenSession implements Runnable {
         this.widgetCallbacks = widgetCallbacks;
     }
 
-    public WebHavenSession(String username, String password, String characterName, CopyOnWriteArrayList<ChatCallback> initialChatCallbacks, CopyOnWriteArrayList<ObjectChangeCallback> initialObjectChangeCallbacks) {
+    public WebHavenSession(String username, String password, CopyOnWriteArrayList<ChatCallback> initialChatCallbacks, CopyOnWriteArrayList<ObjectChangeCallback> initialObjectChangeCallbacks) {
         this.username = username;
         this.password = password;
-        this.characterName = characterName;
         this.shouldClose = false;
         this.initialChatCallbacks = initialChatCallbacks;
         this.initialObjectChangeCallbacks = initialObjectChangeCallbacks;
@@ -59,10 +55,9 @@ public class WebHavenSession implements Runnable {
         this.widgetCallbacks = new CopyOnWriteArrayList<>();
     }
 
-    public WebHavenSession(String username, String password, String characterName, CopyOnWriteArrayList<ChatCallback> initialChatCallbacks) {
+    public WebHavenSession(String username, String password, CopyOnWriteArrayList<ChatCallback> initialChatCallbacks) {
         this.username = username;
         this.password = password;
-        this.characterName = characterName;
         this.shouldClose = false;
         this.initialChatCallbacks = initialChatCallbacks;
         this.initialObjectChangeCallbacks = new CopyOnWriteArrayList<>();
@@ -154,7 +149,7 @@ public class WebHavenSession implements Runnable {
         System.out.println("CONNECTING OR RECONNECTING INTO HAVEN....");
         try {
             this.connection = new Connection(new InetSocketAddress(host, mainPort), username);
-            this.handler = new PlayerHandler(connection, this.characterName);
+            this.handler = new PlayerHandler(connection);
             if(this.initialChatCallbacks != null && !this.initialChatCallbacks.isEmpty()) {
                 for (ChatCallback cb: this.initialChatCallbacks) {
                     this.addChatCallback(cb);

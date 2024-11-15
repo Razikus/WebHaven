@@ -40,7 +40,7 @@ public class ChatterProgram extends AbstractProgram{
             ChatCallback chatStreamer = new BrodcastingChatCallback(this.getManager(), sessName);
             CopyOnWriteArrayList<ChatCallback> callbacks = new CopyOnWriteArrayList<>();
             callbacks.add(chatStreamer);
-            WebHavenSession session = new WebHavenSession(username, password, altname, callbacks);
+            WebHavenSession session = new WebHavenSession(username, password, callbacks);
             try {
                 session.authenticate();
             } catch (InterruptedException e) {

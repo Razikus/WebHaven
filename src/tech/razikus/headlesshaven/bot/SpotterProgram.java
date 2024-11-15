@@ -43,7 +43,7 @@ public class SpotterProgram extends AbstractProgram{
                 return;
             }
 
-            WebHavenSession session = new WebHavenSession(username, password, altname, new CopyOnWriteArrayList<>());
+            WebHavenSession session = new WebHavenSession(username, password, new CopyOnWriteArrayList<>());
             try {
                 session.authenticate();
             } catch (InterruptedException e) {

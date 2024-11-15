@@ -51,7 +51,7 @@ public class AroundVisionProgram extends AbstractProgram{
             ObjectChangeCallback callback = new ObjectSenderCallback(manager, this.getProgname());
             CopyOnWriteArrayList<ObjectChangeCallback> callbacks = new CopyOnWriteArrayList<>();
             callbacks.add(callback);
-            WebHavenSession session = new WebHavenSession(username, password, altname, new CopyOnWriteArrayList<>(), callbacks, errorCallbacks, new CopyOnWriteArrayList<>());
+            WebHavenSession session = new WebHavenSession(username, password, new CopyOnWriteArrayList<>(), callbacks, errorCallbacks, new CopyOnWriteArrayList<>());
             try {
                 session.authenticate();
             } catch (InterruptedException e) {
