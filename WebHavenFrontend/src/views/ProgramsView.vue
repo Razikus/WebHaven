@@ -50,7 +50,8 @@
         </div>
     </div>
     <Chatter v-if="programData && programData.programClass == 'tech.razikus.headlesshaven.bot.ChatterProgram'" />
-    <Visioner v-if="programData && programData.programClass == 'tech.razikus.headlesshaven.bot.AroundVisionProgram'" />
+    <Visioner v-else-if="programData && programData.programClass == 'tech.razikus.headlesshaven.bot.AroundVisionProgram'" />
+    <Generic v-else-if="programData"/>
 
 </template>
 
@@ -59,6 +60,7 @@ import { ref, inject, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Chatter from './components/Chatter.vue';
 import Visioner from './components/Visioner.vue';
+import Generic from './components/Generic.vue';
 
 
 const route = useRoute();

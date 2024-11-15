@@ -4,6 +4,7 @@ import tech.razikus.headlesshaven.PseudoObject;
 import tech.razikus.headlesshaven.ResourceInformationLazyProxy;
 import tech.razikus.headlesshaven.WebHavenSession;
 import tech.razikus.headlesshaven.WebHavenSessionManager;
+import tech.razikus.headlesshaven.bot.automation.AutoLoginCharCallback;
 import tech.razikus.headlesshaven.bot.automation.DiscordWebhook;
 
 import java.util.ArrayList;
@@ -50,6 +51,8 @@ public class SpotterProgram extends AbstractProgram{
                 return;
             }
 
+            session.addWidgetCallback(new AutoLoginCharCallback(altname, session));
+
             Thread sessionThread = new Thread(session);
             sessionThread.start();
 
@@ -65,6 +68,16 @@ public class SpotterProgram extends AbstractProgram{
             }
             this.sessName = null;
             this.getManager().getSessions().remove(sessName);
+
+            this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
+                    "state",
+                    "SLEEPING"
+            ));
+            this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
+                    "message",
+                    "Sleeping for 60 seconds before finding again"
+            ));
+
 
             try {
                 Thread.sleep(1000 * 60);
@@ -96,6 +109,11 @@ public class SpotterProgram extends AbstractProgram{
         int foundCountOld = 0;
 
         while ((session.isAlive() && !this.isShouldClose())) {
+            this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
+                    "state",
+                    "SEARCHING"
+            ));
+            System.out.println("SEARCHING FOR " + toFind + " IN SESSION: " + sessName);
             found = false;
             foundCount = 0;
 
@@ -111,6 +129,10 @@ public class SpotterProgram extends AbstractProgram{
             }
             if(infoSend && foundCountOld != foundCount) {
                 String mess = "FOUND " + toFind + " COUNT: " + foundCount + " | SESSION: " + sessName;
+                this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
+                        "message",
+                        mess
+                ));
                 try {
                     this.webhook.sendMessage(mess);
                 } catch (Exception e) {
@@ -137,11 +159,24 @@ public class SpotterProgram extends AbstractProgram{
             counter++;
 
             if(!found && counter > 60) {
+
+                this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
+                        "state",
+                        "SESSION DISCONNECTED"
+                ));
                 this.session.setShouldClose(true);
             }
         }
         if(infoSend) {
             String mess = "DISCONNECTING  SESSION: " + sessName;
+            this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
+                    "message",
+                    mess
+            ));
+            this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
+                    "state",
+                    "DISCONNECTING"
+            ));
             try {
                 webhook.sendMessage(mess);
             } catch (Exception e) {

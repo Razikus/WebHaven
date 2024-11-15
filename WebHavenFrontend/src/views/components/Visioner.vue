@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import {ref, inject, computed, watch, onMounted} from 'vue';
+import {ref, inject, computed, watch, onMounted, onBeforeUnmount} from 'vue';
 import {useRoute} from 'vue-router';
 import FlowerMenu from './FlowerMenu.vue';
 import ErrorToast from "./ErrorToast.vue";
@@ -388,5 +388,9 @@ onMounted(() => {
     program: programName.value,
     cmdType: 'requestfullobj'
   })
+});
+
+onBeforeUnmount(() => {
+  unregisterMessageCallback(programName.value, onData);
 });
 </script>
