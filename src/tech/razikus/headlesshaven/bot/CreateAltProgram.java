@@ -17,7 +17,7 @@ import static haven.OCache.posres;
 public class CreateAltProgram extends AbstractProgram{
 
 
-    public static HashMap<String, String> declaredArgs = new HashMap<>(Map.of("CHARNAME", "New character name to set (ensure uniqueness)", "BEACON_PASS", "Beacon password to set - bot will wait for it"));
+    public static HashMap<String, String> declaredArgs = new HashMap<>(Map.of("BEACON_PASS", "Beacon password to set - bot will wait for it"));
 
     public CreateAltProgram(String progname, WebHavenSessionManager manager, Credential credential, HashMap<String, String> runningArgs) {
         super(progname, manager, credential, runningArgs);
@@ -98,9 +98,12 @@ public class CreateAltProgram extends AbstractProgram{
 
     @Override
     public void sessionHandler() {
-        String botname = this.getDeclaredArgs().get("CHARNAME");
-        String beacon_pass = this.getDeclaredArgs().get("BEACON_PASS");
+        String botname = this.getCredential().getCharname();
+        String beacon_pass = this.getDeclaredArgs().getOrDefault("BEACON_PASS", "");
 
+
+        sendStateProg("STARTING");
+        sendMessageProg("Starting program");
         while (!session.connectionCreated() && !this.isShouldClose()) {
             try {
                 Thread.sleep(100);
@@ -133,7 +136,7 @@ public class CreateAltProgram extends AbstractProgram{
                 if(session.getWidgetManager().getMapView().isPresent()) {
                     MapViewPseudoWidget mapView = session.getWidgetManager().getMapView().get();
                     if(state == 1) {
-                        System.out.println("CLICKING AFTERRIVER STATE 1");
+                        sendStateProg("CROSSING RIVER");
                         Coord2d toClick = new Coord2d(initialXAfterRiver, initialYAfterRiver);
                         Coord mapCoord = toClick.floor(posres);
                         Coord clickPx = new Coord((int)toClick.x, (int)toClick.y);
@@ -141,7 +144,7 @@ public class CreateAltProgram extends AbstractProgram{
                         isMoving = true;
                         state = 2;
                     } else if (state == 2 && !isMoving) {
-                        System.out.println("CLICKING WIZARD STATE 3");
+                        sendStateProg("GOING TO WIZARD");
                         Coord2d toClick = new Coord2d(xWizard, yWizard);
                         Coord mapCoord = toClick.floor(posres);
                         Coord clickPx = new Coord((int)toClick.x, (int)toClick.y);
@@ -149,6 +152,7 @@ public class CreateAltProgram extends AbstractProgram{
                         isMoving = true;
                         state = 3;
                     } else if (state == 3 && !isMoving) {
+                        sendStateProg("RIGHTCLICKING WIZARD");
                         PseudoObject player = session.getHandler().getObjectManager().getPlayer();
                         HashMap<Long, PseudoObject> objs = session.getHandler().getObjectManager().getPseudoObjectHashMapTHSafe();
                         PseudoObject wizard = null;
@@ -188,11 +192,13 @@ public class CreateAltProgram extends AbstractProgram{
                             state = 4;
                         }
                     } else if(state == 4) {
+                        sendStateProg("CHANGING NAME");
                         System.out.println("Waiting for widget to send name change");
                     } else if (state == 5 ){
                         if(beacon_pass.isEmpty()) {
                             state = 7;
                         } else {
+                            sendStateProg("RIGHTCLICKING CHARTER POLE");
                             HashMap<Long, PseudoObject> objs = session.getHandler().getObjectManager().getPseudoObjectHashMapTHSafe();
                             PseudoObject charterPole = null;
                             for (PseudoObject obj : objs.values()) {
@@ -237,9 +243,11 @@ public class CreateAltProgram extends AbstractProgram{
                         }
 
                     } else if (state == 6) {
+                        sendStateProg("WAITING FOR BEACON INPUT");
                         System.out.println("WAITING FOR CHARTER POLE");
                     } else if (state == 7 ) {
                         System.out.println("NAME CHANGED");
+                        sendStateProg("BURNING IN FIRE");
                         HashMap<Long, PseudoObject> objs = session.getHandler().getObjectManager().getPseudoObjectHashMapTHSafe();
                         PseudoObject fire = null;
                         for (PseudoObject obj : objs.values()) {
@@ -272,6 +280,7 @@ public class CreateAltProgram extends AbstractProgram{
                             state = 8;
                         }
                     } else if (state == 8 ) {
+                        sendStateProg("WAITING FOR BURNING");
                         System.out.println("WAITING FOR BURNING");
                     } else if(state == 9) {
                         System.out.println("======================================");
@@ -280,12 +289,16 @@ public class CreateAltProgram extends AbstractProgram{
                         System.out.println("HAVE A NICE DAY");
                         System.out.println("======================================");
                         System.out.println("======================================");
+                        sendStateProg("FINISHED");
+                        sendMessageProg("Finished creating character. THANK YOU FOR CALLING OUR SERVICE, HAVE A NICE DAY");
                         setShouldClose(true);
                     } else if(isMoving) {
                         System.out.println("Currently moving to next location.");
+                        sendMessageProg("Currently moving to next location.");
                     }
                 }
                 if(tick % 10 == 0 && charterWidget[0] != null) {
+                    sendMessageProg("Waiting for beacon input... " + beacon_pass);
                     charterWidget[0].WidgetMsg("activate", beacon_pass);
                 }
                 Thread.sleep(300);
@@ -298,11 +311,13 @@ public class CreateAltProgram extends AbstractProgram{
                         if (isMovingThreshold > 5) {
                             isMoving = false;
                             System.out.println("NOT MOVING");
+                            sendMessageProg("Detected not moving");
                             isMovingThreshold = 0;
                         } else {
                             isMovingThreshold++;
                         }
                     } else {
+                        sendMessageProg("Detected moving");
                         isMoving = true;
                     }
 
