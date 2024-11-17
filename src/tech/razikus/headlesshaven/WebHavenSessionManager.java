@@ -177,11 +177,17 @@ public class WebHavenSessionManager {
         String initialPassword = "";
         String initialChar = "";
 
+        String initialProgram = AroundVisionProgram.class.getName();
+
         if(env.containsKey("HOST")) {
             host = env.get("HOST");
         }
         if(env.containsKey("PORT")) {
             port = env.get("PORT");
+        }
+
+        if(env.containsKey("INITIAL_PROGRAM")) {
+            initialProgram = env.get("INITIAL_PROGRAM");
         }
 
         if(env.containsKey("AUTOLOGIN_USER")){
@@ -334,10 +340,14 @@ public class WebHavenSessionManager {
             }
             try {
                 Credential credentials = new Credential(initialUser, initialPassword, initialChar);
-                String progname = ChatterProgram.class.getName();
-                AbstractProgram program = new ChatterProgram(progname, sessionManager, credentials, new HashMap<>());
+
+                AbstractProgram program = ProgramRegistry.instantiate(initialProgram, initialProgram, sessionManager, credentials, new HashMap<>());
+
                 sessionManager.startProgram(program);
             } catch (InterruptedException e) {
+                System.out.println("CANNOT AUTHENTICATE INITIAL USER OR SOMETHING: " + e);
+                throw new RuntimeException(e);
+            } catch (Exception e) {
                 System.out.println("CANNOT AUTHENTICATE INITIAL USER OR SOMETHING: " + e);
                 throw new RuntimeException(e);
             }

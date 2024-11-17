@@ -24,26 +24,54 @@ public class MapRenderer {
     }
 
     private void initializeDefaultColors() {
+        // Create a range of distinct colors using golden ratio
+        float goldenRatio = 0.618033988749895f;
         float hue = 0;
-        float saturation = 0.7f;  // Reduced from 0.8
-        float brightness = 0.8f;  // Reduced from 0.95
 
         for (int i = 0; i < 256; i++) {
-            tileColors.put(i, Color.getHSBColor(hue, saturation, brightness));
-            hue += 0.1f;
-            if (hue > 1.0f) {
-                hue = 0;
-                saturation = Math.max(0.3f, saturation - 0.1f);
-                if (saturation < 0.3f) {
-                    brightness = Math.max(0.4f, brightness - 0.1f);
-                }
+            hue = (hue + goldenRatio) % 1.0f;
+
+            float saturation, brightness;
+
+            switch (i % 4) {
+                case 0: // Vibrant colors
+                    saturation = 0.9f;
+                    brightness = 0.9f;
+                    break;
+                case 1: // Softer colors
+                    saturation = 0.7f;
+                    brightness = 0.95f;
+                    break;
+                case 2: // Deep colors
+                    saturation = 0.85f;
+                    brightness = 0.8f;
+                    break;
+                default: // Lighter colors
+                    saturation = 0.6f;
+                    brightness = 1.0f;
+                    break;
             }
+
+            Color color = Color.getHSBColor(hue, saturation, brightness);
+
+            if (isColorTooDark(color) || isColorTooLight(color)) {
+                color = Color.getHSBColor(hue, saturation, 0.75f);
+            }
+
+            tileColors.put(i, color);
         }
+    }
+
+    private boolean isColorTooDark(Color color) {
+        return (color.getRed() + color.getGreen() + color.getBlue()) / 3.0 < 30;
+    }
+
+    private boolean isColorTooLight(Color color) {
+        return (color.getRed() + color.getGreen() + color.getBlue()) / 3.0 > 225;
     }
 
     public void renderAll(String filename, PseudoObject player) throws IOException {
 
-        // Existing bounds calculation
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE;

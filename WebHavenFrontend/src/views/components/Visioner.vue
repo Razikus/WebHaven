@@ -25,7 +25,10 @@
                     }})
                   </div>
                   <div v-for="(resource, index) in hoveredObject.resources" :key="index">
-                    {{ resource.name }} {{resource.layers}}
+                    <div v-if="resourceMap[resource]">
+                      {{ resourceMap[resource].name }} {{resourceMap[resource].layers}}
+
+                    </div>
                   </div>
                 </div>
                 <div v-else>
@@ -51,6 +54,9 @@ import FlowerMenu from './FlowerMenu.vue';
 import ErrorToast from "./ErrorToast.vue";
 const toastRef = ref(null);
 
+const resourceMap = ref({});
+
+const alreadyRequested = ref({});
 
 const VIEWPORT_SIZE = 1100;
 const PLAYER_SIZE = 5;
@@ -84,7 +90,22 @@ const onData = (data) => {
     }
   } else if(data.cmdType == "error") {
     toastRef.value?.addToast(data.data);
+  } else if(data.cmdType == "resource") {
+    resourceMap.value[data.data.id] = data.data.resource;
   }
+};
+
+const requestResourceId = (resid) => {
+  // check for 20 seconds
+  if (alreadyRequested.value[resid] && new Date() - alreadyRequested.value[resid] < 20000) {
+    return;
+  }
+  sendMessage("proginput", {
+    program: programName.value,
+    cmdType: 'requestresource',
+    idOf: resid
+  });
+  alreadyRequested.value[resid] = new Date();
 };
 
 const closeFlowerMenu = () => {
@@ -156,8 +177,9 @@ const handleMouseDown = (event) => {
     let meshId = -1
     if(hoveredObject.value.resources) {
       for (const resource of hoveredObject.value.resources) {
-        if (resource.layers) {
-          for (const layer of resource.layers) {
+        let realResource = resourceMap.value[resource]
+        if (realResource && realResource.layers) {
+          for (const layer of realResource.layers) {
             if (layer.type == 'mesh' && layer.id != -1) {
               meshId = layer.id;
             }
@@ -222,10 +244,14 @@ const handleMouseMove = (event) => {
       );
       let isWall = false;
       for (const resource of obj.resources) {
-        if (resource.name == "gfx/terobjs/arch/hwall") {
-          isWall = true;
-        } else if(resource.name == "gfx/tiles/ridges/caveout") {
-          // isWall = true;
+        let realResource = resourceMap.value[resource];
+        if(realResource) {
+          if (realResource.name == "gfx/terobjs/arch/hwall") {
+            isWall = true;
+          } else if(realResource.name == "gfx/tiles/ridges/caveout") {
+            // isWall = true;
+
+          }
 
         }
       }
@@ -292,20 +318,30 @@ const drawMap = () => {
           let color = 'blue';
           let shape = 'circle';
           if (obj.resources && obj.resources.length > 0) {
-            if (obj.resources[0].name.includes('plant')) {
-              color = 'green';
-            } else if (obj.resources[0].name.includes('stockpile')) {
-              color = 'orange';
-            } else if (obj.resources[0].name.includes('body')) {
-              color = 'red';
-              pingSize = 5;
-            } else if (obj.resources[0].name.includes('palisadeseg')) {
-              color = 'brown';
-              shape = 'square';
-            } else if (obj.resources[0].name.includes('palisadecp')) {
-              color = 'brown';
-              pingSize = 5;
-              shape = 'square';
+            for (const resource of obj.resources) {
+              if (!resourceMap.value[resource]) {
+                requestResourceId(resource);
+              }
+            }
+            let resource = resourceMap.value[obj.resources[0]];
+            if(!resource){
+              color='black';
+            } else {
+              if (resource.name.includes('plant')) {
+                color = 'green';
+              } else if (resource.name.includes('stockpile')) {
+                color = 'orange';
+              } else if (resource.name.includes('body')) {
+                color = 'red';
+                pingSize = 5;
+              } else if (resource.name.includes('palisadeseg')) {
+                color = 'brown';
+                shape = 'square';
+              } else if (resource.name.includes('palisadecp')) {
+                color = 'brown';
+                pingSize = 5;
+                shape = 'square';
+              }
             }
           }
 
@@ -320,8 +356,9 @@ const drawMap = () => {
 
           if (obj.resources) {
             for (const resource of obj.resources) {
-              if (resource.layers) {
-                for (const layer of resource.layers) {
+              let realResource = resourceMap.value[resource];
+              if (realResource && realResource.layers) {
+                for (const layer of realResource.layers) {
                   if (layer.type == 'obstacle') {
                     ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
                     ctx.lineWidth = 1;

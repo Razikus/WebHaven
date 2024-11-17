@@ -76,7 +76,11 @@ public class SimpleMapCache {
                     break;
                 String resnm = buf.string();
                 int resver = buf.uint16();
-                resourceManager.loadResource(new NameVersion(resnm, resver));
+                if(resourceManager != null) {
+                    resourceManager.loadResource(new NameVersion(resnm, resver));
+                } else {
+                    return;
+                }
                 tileResources.put(tileid, new NameVersion(resnm, resver));
             }
             for(int i = 0; i < tiles.length; i++) {
@@ -98,7 +102,11 @@ public class SimpleMapCache {
                 tileids[encid] = tileid;
                 String resnm = buf.string();
                 int resver = buf.uint16();
-                resourceManager.loadResource(new NameVersion(resnm, resver));
+                if(resourceManager != null) {
+                    resourceManager.loadResource(new NameVersion(resnm, resver));
+                } else {
+                    return;
+                }
                 tileResources.put(tileid, new NameVersion(resnm, resver));
             }
             boolean lg = maxid >= 256;

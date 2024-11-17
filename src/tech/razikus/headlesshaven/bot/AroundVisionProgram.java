@@ -3,6 +3,7 @@ package tech.razikus.headlesshaven.bot;
 import com.google.gson.JsonObject;
 import haven.Coord;
 import haven.Coord2d;
+import haven.Resource;
 import tech.razikus.headlesshaven.*;
 import tech.razikus.headlesshaven.bot.automation.AutoLoginCharCallback;
 import tech.razikus.headlesshaven.bot.automation.DiscordWebhook;
@@ -174,6 +175,13 @@ public class AroundVisionProgram extends AbstractProgram{
             case "requestfullobj":
                 HashMap<Long, PseudoObject> map = session.getHandler().getObjectManager().getPseudoObjectHashMapTHSafe();
                 this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper("fullobj", map));
+                break;
+            case "requestresource":
+                int id = command.get("idOf").getAsInt();
+                Resource res = session.getHandler().getResourceManager().getRealResource(id);
+                if(res != null) {
+                    this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper("resource", new IdResource(id, res)));
+                }
                 break;
             case "flowermenu":
                 int option = command.get("option").getAsInt();

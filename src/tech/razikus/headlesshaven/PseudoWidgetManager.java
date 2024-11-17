@@ -10,9 +10,12 @@ public class PseudoWidgetManager {
     final private HashMap<Integer, PseudoWidget> pseudoWidgetHashMap = new HashMap<>();
 
     private BuddyPseudoWidget instantiatedBuddy;
+    private ResourceManager resourceManager;
 
     private HashMap<Integer, ChatPseudoWidget> chatWidgets = new HashMap<>();
     private HashMap<Integer, FlowerMenuPseudoWidget> flowerMenus = new HashMap<>();
+    private HashMap<Integer, PseudoItem> items = new HashMap<>();
+    private HashMap<Integer, PseudoInventory> inventories = new HashMap<>();
 
     private CopyOnWriteArrayList<ChatCallback> callbacks;
 
@@ -30,7 +33,8 @@ public class PseudoWidgetManager {
     private String myCharacter;
 
 
-    public PseudoWidgetManager(CopyOnWriteArrayList<ChatCallback> callbacks, CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks, CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks) {
+    public PseudoWidgetManager(ResourceManager manager, CopyOnWriteArrayList<ChatCallback> callbacks, CopyOnWriteArrayList<PseudoWidgetErrorCallback> errorCallbacks, CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks) {
+        this.resourceManager = manager;
         this.callbacks = callbacks;
         this.errorCallbacks = errorCallbacks;
         this.widgetCallbacks = widgetCallbacks;
@@ -88,6 +92,12 @@ public class PseudoWidgetManager {
 
     }
 
+    public PseudoWidget getWidgetById(int id) {
+        synchronized (pseudoWidgetHashMap) {
+            return pseudoWidgetHashMap.get(id);
+        }
+    }
+
     public String getMyCharacter() {
         return myCharacter;
     }
@@ -114,6 +124,10 @@ public class PseudoWidgetManager {
 
     }
 
+    public HashMap<Integer, PseudoInventory> getInventories() {
+        return inventories;
+    }
+
     public void addNewWidget(PseudoWidget widget) {
         synchronized (pseudoWidgetHashMap) {
             PseudoWidget toAdd = widget;
@@ -123,8 +137,11 @@ public class PseudoWidgetManager {
                 this.villageName = nameOfVillage;
                 this.villageID = idOf;
                 this.isInVillage = true;
-
             }
+
+
+
+            System.out.println("ADDED WIDGET: " + toAdd);
             switch (widget.type) {
                 case "buddy":
                     BuddyPseudoWidget buddyPseudoWidget = new BuddyPseudoWidget(widget);
@@ -146,6 +163,20 @@ public class PseudoWidgetManager {
 
                     }
                     break;
+                case "inv":
+                    PseudoInventory pseudoInventory = new PseudoInventory(widget, this);
+                    toAdd = pseudoInventory;
+                    inventories.put(widget.id, pseudoInventory);
+                    break;
+                case "item":
+                    PseudoItem pseudoItem = new PseudoItem(widget, this.resourceManager);
+                    toAdd = pseudoItem;
+                    synchronized (items) {
+                        items.put(widget.id, pseudoItem);
+                    }
+
+                    // @todo callbacks
+                    break;
                 case "sm":
                     FlowerMenuPseudoWidget flowerMenuPseudoWidget = new FlowerMenuPseudoWidget(this, widget);
                     toAdd = flowerMenuPseudoWidget;
@@ -161,7 +192,18 @@ public class PseudoWidgetManager {
                 }
             }
             pseudoWidgetHashMap.put(widget.id, toAdd);
-            System.out.println("ADDED WIDGET: " + toAdd);
+        }
+    }
+
+    public ArrayList<PseudoItem> getAllItemsForInventory(int id) {
+        synchronized (items) {  // Synchronize the entire operation on the items map
+            ArrayList<PseudoItem> toRet = new ArrayList<>();
+            for (Map.Entry<Integer, PseudoItem> wg: items.entrySet()) {
+                if (wg.getValue().getId() == id) {
+                    toRet.add(wg.getValue());
+                }
+            }
+            return toRet;
         }
     }
 
@@ -190,11 +232,12 @@ public class PseudoWidgetManager {
             }
             chatWidgets.remove(widgetId);
             flowerMenus.remove(widgetId);
+            items.remove(widgetId);
+            inventories.remove(widgetId);
             widgetCallbacks.forEach(cb -> cb.onWidgetDestroyed(widgetId));
 
 
         }
-        System.out.println("REMOVED WIDGET: " + widgetId);
     }
 
     public void widgetSetParent(int widgetID, PseudoWidget widget) {

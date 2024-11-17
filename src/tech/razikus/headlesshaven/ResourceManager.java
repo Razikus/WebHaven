@@ -3,20 +3,23 @@ package tech.razikus.headlesshaven;
 import com.google.gson.*;
 import haven.*;
 
-import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ResourceManager {
 
     private HashMap<Integer, ResourceInformation> resourceInformationHashMap = new HashMap<>();
+    private HashMap<NameVersion, Integer> resourceIDHashMap = new HashMap<>();
+    private CopyOnWriteArrayList<NumberedResourceLoadedCallback> callbacks = new CopyOnWriteArrayList<>();
+
+    public ResourceManager() {
+    }
 
     public void addResource(ResourceInformation info) {
         resourceInformationHashMap.put(info.getId(), info);
+        resourceIDHashMap.put(new NameVersion(info.getName(), info.getResver()), info.getId());
         GlobalShareableResourceHammer.HAMMER.loadResource(NameVersion.fromResourceInformation(info));
     }
 
@@ -32,6 +35,10 @@ public class ResourceManager {
             return null;
         }
         return GlobalShareableResourceHammer.HAMMER.getResource(info.getName(), info.getResver());
+    }
+
+    public Resource getRealResource(String name, int version) {
+        return GlobalShareableResourceHammer.HAMMER.getResource(name, version);
     }
 
     @SuppressWarnings("unchecked")
@@ -97,3 +104,4 @@ class ResourceSerializer implements JsonSerializer<Resource> {
     }
 
 }
+

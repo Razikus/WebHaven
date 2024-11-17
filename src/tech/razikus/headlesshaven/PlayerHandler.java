@@ -10,11 +10,11 @@ public class PlayerHandler implements Connection.Callback, Runnable {
 
     private Connection connection;
     private PseudoWidgetManager widgetManager;
-    private ResourceManager resourceManager = new ResourceManager();
+    private ResourceManager resourceManager;
     private ObjectManager objectManager;
     private AtomicReference<WebHavenState> latestState = new AtomicReference<>();
-    private PseudoGlobManager pseudoGlobManager = new PseudoGlobManager(resourceManager);
-    private SimpleMapCache mapCache = new SimpleMapCache(resourceManager, this);
+    private PseudoGlobManager pseudoGlobManager;
+    private SimpleMapCache mapCache;
 
     private CopyOnWriteArrayList<ChatCallback> chatCallbacks = new CopyOnWriteArrayList<>();
     private CopyOnWriteArrayList<ObjectChangeCallback> objectChangeCallbacks = new CopyOnWriteArrayList<>();
@@ -31,7 +31,10 @@ public class PlayerHandler implements Connection.Callback, Runnable {
 
     public PlayerHandler(Connection connection) {
         this.connection = connection;
-        this.widgetManager = new PseudoWidgetManager(chatCallbacks, errorCallbacks, widgetCallbacks);
+        this.resourceManager = new ResourceManager();
+        this.mapCache =  new SimpleMapCache(resourceManager, this);
+        this.pseudoGlobManager = new PseudoGlobManager(resourceManager);
+        this.widgetManager = new PseudoWidgetManager(this.resourceManager, chatCallbacks, errorCallbacks, widgetCallbacks);
         this.objectManager = new ObjectManager(resourceManager, widgetManager, objectChangeCallbacks);
 
     }

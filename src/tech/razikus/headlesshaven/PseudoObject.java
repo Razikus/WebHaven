@@ -377,10 +377,11 @@ class PseudoObjectSerializer implements JsonSerializer<PseudoObject> {
         // Handle resourceInformationLazyProxies
         JsonArray resources = new JsonArray();
         for (ResourceInformationLazyProxy proxy : src.getResourceInformationLazyProxies()) {
-            Resource realResource = src.getResourceManager().getRealResource(proxy.getResID());
-            if(realResource != null) {
-                resources.add(context.serialize(realResource));
-            }
+            resources.add(proxy.getResID());
+//            Resource realResource = src.getResourceManager().getRealResource(proxy.getResID());
+//            if(realResource != null) {
+//                resources.add(context.serialize(realResource));
+//            }
             // Get the actual resource data
 //            InstantiatedResourceInformation resource = proxy.getResource();
 //            resources.add(context.serialize(resource));

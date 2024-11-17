@@ -9,10 +9,12 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 class NameVersion {
@@ -84,6 +86,8 @@ public class ShareableResourceHammer implements  Runnable {
     private BlockingQueue<NameVersion> resourceInformationQueue  = new LinkedBlockingQueue<>();
     private ConcurrentHashMap<NameVersion, Resource> resourceHashMap = new ConcurrentHashMap<>();
 
+    private CopyOnWriteArrayList<ResourceLoadedCallback> callbacks = new CopyOnWriteArrayList<>();
+
     private boolean shouldClose = false;
 
     public void setShouldClose(boolean shouldClose) {
@@ -110,6 +114,18 @@ public class ShareableResourceHammer implements  Runnable {
         return getResource(new NameVersion(name, version));
     }
 
+    public ArrayList<Resource> getAllLoadedResources() {
+        return new ArrayList<>(resourceHashMap.values());
+    }
+
+    public void addCallback(ResourceLoadedCallback callback) {
+        callbacks.add(callback);
+    }
+
+    public void removeCallback(ResourceLoadedCallback callback) {
+        callbacks.remove(callback);
+    }
+
 
     @Override
     public void run() {
@@ -119,9 +135,17 @@ public class ShareableResourceHammer implements  Runnable {
             try {
                 info = resourceInformationQueue.take();
                 Resource resource = Resource.remote().loadwait(info.getName(), info.getVersion());
+                if(info.getName().contains("flute")) {
+                    System.out.println("LOADED FLUTE: " +  resource);
+                    ArrayList<Resource> res = new ArrayList<>();
+                    res.add(resource);
+                    DebugRender.dumpAllResources(res, "debug");
 
+                }
                 resourceHashMap.put(info, resource);
-                String name = info.getName();
+                for (ResourceLoadedCallback callback: callbacks) {
+                    callback.onFullResourceLoaded(resource);
+                }
             } catch (InterruptedException e) {
                 this.shouldClose = true;
             }
