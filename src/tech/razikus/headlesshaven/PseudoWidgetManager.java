@@ -23,6 +23,8 @@ public class PseudoWidgetManager {
     private CopyOnWriteArrayList<PseudoWidgetCallback> widgetCallbacks;
     private MapViewPseudoWidget mapView = null;
 
+    private ArrayList<PseudoMusicWidget> musicWidgets = new ArrayList<>();
+
 
     // @todo move to different components, but why now
     private boolean isInVillage = false;
@@ -186,6 +188,11 @@ public class PseudoWidgetManager {
                     mapView = new MapViewPseudoWidget(widget);
                     break;
             }
+            if(widget.type.startsWith("ui/music:")) {
+                PseudoMusicWidget toAddReal = new PseudoMusicWidget(widget);
+                toAdd = toAddReal;
+                musicWidgets.add(toAddReal);
+            }
             synchronized (widgetCallbacks) {
                 for (PseudoWidgetCallback cb: widgetCallbacks) {
                     cb.onWidgetCreated(toAdd);
@@ -199,7 +206,19 @@ public class PseudoWidgetManager {
         synchronized (items) {  // Synchronize the entire operation on the items map
             ArrayList<PseudoItem> toRet = new ArrayList<>();
             for (Map.Entry<Integer, PseudoItem> wg: items.entrySet()) {
-                if (wg.getValue().getId() == id) {
+                if (wg.getValue().getParent() == id) {
+                    toRet.add(wg.getValue());
+                }
+            }
+            return toRet;
+        }
+    }
+
+    public ArrayList<PseudoItem> getAllItemsThatAreInEQ() {
+        synchronized (items) {  // Synchronize the entire operation on the items map
+            ArrayList<PseudoItem> toRet = new ArrayList<>();
+            for (Map.Entry<Integer, PseudoItem> wg: items.entrySet()) {
+                if (wg.getValue().getPositonInEquipment() != -1) {
                     toRet.add(wg.getValue());
                 }
             }
@@ -270,4 +289,7 @@ public class PseudoWidgetManager {
         }
     }
 
+    public ArrayList<PseudoMusicWidget> getMusicWidgets() {
+        return musicWidgets;
+    }
 }

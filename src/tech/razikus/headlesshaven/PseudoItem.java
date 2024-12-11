@@ -46,6 +46,14 @@ public class PseudoItem extends PseudoWidget {
 
     }
 
+    public ResourceInformationLazyProxy getResProxy() {
+        return resProxy;
+    }
+
+    public int getPositonInEquipment() {
+        return positonInEquipment;
+    }
+
     @Override
     public void ReceiveMessage(WidgetMessage message) {
         switch (message.getName()) {
@@ -83,7 +91,9 @@ public class PseudoItem extends PseudoWidget {
     }
 
     public void iact() {  // Interact with item
-        this.WidgetMsg("iact");
+//        item.wdgmsg("iact", ev.c, ui.modflags());
+        Coord cc = new Coord(0, 0);
+        this.WidgetMsg("iact", cc, 0);
     }
 
 
