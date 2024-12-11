@@ -99,7 +99,7 @@ public class CreateAltProgram extends AbstractProgram{
     @Override
     public void sessionHandler() {
         String botname = this.getCredential().getCharname();
-        String beacon_pass = this.getDeclaredArgs().getOrDefault("BEACON_PASS", "");
+        String beacon_pass = this.getRunningArgs().getOrDefault("BEACON_PASS", "");
 
 
         sendStateProg("STARTING");
@@ -362,7 +362,7 @@ class CreateCharButtonCallback extends PseudoWidgetCallback {
 
     @Override
     public void onWidgetCreated(PseudoWidget widget) {
-        if(widget.getId() == 6) {
+        if(widget.getType().equals("ibtn")) {
             widget.WidgetMsg("activate");
             session.getWidgetManager().removeWidgetCallback(this);
         }

@@ -135,13 +135,13 @@ public class ShareableResourceHammer implements  Runnable {
             try {
                 info = resourceInformationQueue.take();
                 Resource resource = Resource.remote().loadwait(info.getName(), info.getVersion());
-                if(info.getName().contains("flute")) {
-                    System.out.println("LOADED FLUTE: " +  resource);
-                    ArrayList<Resource> res = new ArrayList<>();
-                    res.add(resource);
-                    DebugRender.dumpAllResources(res, "debug");
-
-                }
+//                if(info.getName().contains("flute") || info.getName().contains("music")) {
+//                    System.out.println("LOADED FLUTE: " +  resource);
+//                    ArrayList<Resource> res = new ArrayList<>();
+//                    res.add(resource);
+//                    DebugRender.dumpAllResources(res, "debug");
+//
+//                }
                 resourceHashMap.put(info, resource);
                 for (ResourceLoadedCallback callback: callbacks) {
                     callback.onFullResourceLoaded(resource);
