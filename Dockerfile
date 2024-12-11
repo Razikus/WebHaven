@@ -26,7 +26,7 @@ RUN mvn clean install
 
 
 FROM amazoncorretto:21-alpine as runner
-COPY --from=backbuilder /build/target/WebHaven-0.3-with-dependencies.jar /WebHaven-0.3.jar
+COPY --from=backbuilder /build/target/WebHaven-0.4-with-dependencies.jar /WebHaven-0.4.jar
 
 
 ENV HOST=0.0.0.0
@@ -34,4 +34,4 @@ ENV PORT=7901
 ENV AUTOLOGIN_USER=""
 ENV AUTOLOGIN_PASSWORD=""
 ENV AUTOLOGIN_CHAR=""
-ENTRYPOINT ["java", "-jar", "/WebHaven-0.3.jar"]
+ENTRYPOINT ["java", "-jar", "/WebHaven-0.4.jar"]

@@ -6,7 +6,7 @@
 
     <groupId>tech.razikus</groupId>
     <artifactId>WebHaven</artifactId>
-    <version>0.3</version>
+    <version>0.4</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

@@ -13,14 +13,14 @@ This is still alpha version, more like Proof of Concept
 If you are not scared of running precompiled version of this client, and you have docker:
 ```
 
-docker run -p 7901:7901 -d razikus/webhaven:0.3
+docker run -p 7901:7901 -d razikus/webhaven:0.4
 
 open your browser on http://localhost:7901 
 
 
 OR
 
-docker run -p 7901:7901 -e AUTOLOGIN_USER=ACCNAME -e AUTOLOGIN_PASSWORD=PASSWORD -e AUTOLOGIN_CHAR=CHARNAME -d razikus/webhaven:0.3
+docker run -p 7901:7901 -e AUTOLOGIN_USER=ACCNAME -e AUTOLOGIN_PASSWORD=PASSWORD -e AUTOLOGIN_CHAR=CHARNAME -d razikus/webhaven:0.4
 
 This will additionally init your program (currently ChatterProgram)
 
@@ -86,7 +86,7 @@ mvn clean install
 Run the compiled JAR directly:
 
 ```bash
-java -jar target/WebHafen-0.3.jar
+java -jar target/WebHafen-0.4.jar
 ```
 
 ### Using Docker
