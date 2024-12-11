@@ -62,10 +62,8 @@ cd WebHafen
 
 2. Build the frontend:
 ```bash
-cd src/main/resources/public/WebHaven
-yarn install
-yarn build
-cd ../../../..
+cd WebHavenFrontend
+bash dist.sh
 ```
 
 3. Build the backend:
