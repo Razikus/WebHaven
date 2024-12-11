@@ -22,7 +22,12 @@ OR
 
 docker run -p 7901:7901 -e AUTOLOGIN_USER=ACCNAME -e AUTOLOGIN_PASSWORD=PASSWORD -e AUTOLOGIN_CHAR=CHARNAME -d razikus/webhaven:0.4
 
-This will additionally init your program (currently ChatterProgram)
+OR HEADLESS SPOTTER 
+
+docker run -e AUTOLOGIN_CHAR=X -e AUTOLOGIN_PASSWORD=Y -e AUTOLOGIN_USER=Z -e INITIAL_PROGRAM=tech.razikus.headlesshaven.bot.PlayerSpotterProgram -e RUNNINGARG_discord_key=https://discord.com/api/webhooks/XXXX/YYY --rm razikus/webhaven:0.4
+
+
+This will additionally init your program 
 
 ```
 
