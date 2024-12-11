@@ -166,9 +166,25 @@ public class WebHavenSessionManager {
         });
     }
 
+
+    private static HashMap<String, String> parseRunningArgs(Map<String, String> env) {
+        HashMap<String, String> runningArgs = new HashMap<>();
+        final String PREFIX = "RUNNINGARG_";
+
+        for (Map.Entry<String, String> entry : env.entrySet()) {
+            if (entry.getKey().startsWith(PREFIX)) {
+                String argName = entry.getKey().substring(PREFIX.length()).toLowerCase();
+                runningArgs.put(argName, entry.getValue());
+            }
+        }
+
+        return runningArgs;
+    }
+
     // Modified main class
     public static void main(String[] args) {
         Map<String, String> env = System.getenv();
+        HashMap<String, String> runningArgs = parseRunningArgs(env);
 
         String host = "localhost";
         String port = "7071";
@@ -177,7 +193,9 @@ public class WebHavenSessionManager {
         String initialPassword = "";
         String initialChar = "";
 
-        String initialProgram = AroundVisionProgram.class.getName();
+        String initialProgram = PlayerSpotterProgram.class.getName();
+
+
 
         if(env.containsKey("HOST")) {
             host = env.get("HOST");
@@ -341,7 +359,7 @@ public class WebHavenSessionManager {
             try {
                 Credential credentials = new Credential(initialUser, initialPassword, initialChar);
 
-                AbstractProgram program = ProgramRegistry.instantiate(initialProgram, initialProgram, sessionManager, credentials, new HashMap<>());
+                AbstractProgram program = ProgramRegistry.instantiate(initialProgram, initialProgram, sessionManager, credentials, runningArgs);
 
                 sessionManager.startProgram(program);
             } catch (InterruptedException e) {
