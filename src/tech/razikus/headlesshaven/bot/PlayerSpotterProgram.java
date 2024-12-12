@@ -7,6 +7,7 @@ import tech.razikus.headlesshaven.bot.automation.DiscordWebhook;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PlayerSpotterProgram extends AbstractProgram{
@@ -17,7 +18,7 @@ public class PlayerSpotterProgram extends AbstractProgram{
     }
 
 
-    public static HashMap<String, String> declaredArgs = new HashMap<>(Map.of("discord_key", "Discord api key to push notifications to"));
+    public static HashMap<String, String> declaredArgs = new HashMap<>(Map.of("discord_key", "Discord api key to push notifications to", "notify_start", "Notify about start"));
 
 
     private WebHavenSession session;
@@ -99,6 +100,7 @@ public class PlayerSpotterProgram extends AbstractProgram{
     @Override
     public void sessionHandler() {
         String toFind = "gfx/borka/body";
+        boolean shouldNotifyStart = this.getRunningArgs().get("notify_start") != null && this.getRunningArgs().get("notify_start").equals("1");
 
         while (!session.connectionCreated() && !this.isShouldClose()) {
             try {
@@ -128,8 +130,9 @@ public class PlayerSpotterProgram extends AbstractProgram{
             counter++;
         }
 
-
-        this.sendMessageWithStandardException("STARTING PLAYER SPOTTER SESSION: " + sessName);
+        if (shouldNotifyStart) {
+            this.sendMessageWithStandardException("STARTING PLAYER SPOTTER SESSION: " + sessName);
+        }
 
         while ((session.isAlive() && !this.isShouldClose())) {
             this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
@@ -138,14 +141,19 @@ public class PlayerSpotterProgram extends AbstractProgram{
             ));
             found = false;
             foundCount = 0;
+            Set<Long> alreadyProcessed = new HashSet<>();
 
             StringBuilder EQ = new StringBuilder();
             for (PseudoObject obj: session.getHandler().getObjectManager().getPseudoObjectHashMap().values()) {
                 for (ResourceInformationLazyProxy proxy: obj.getResourceInformationLazyProxies()) {
                     if (proxy.getResource().getInformation().getName().equals(toFind) && obj.getId() != session.getWidgetManager().getMyGOBId()) {
                         if(!obj.isVillageBuddy()) {
+                            if(alreadyProcessed.contains(obj.getId())) {
+                                continue;
+                            }
                             found = true;
                             foundCount++;
+                            alreadyProcessed.add(obj.getId());
                             if(!obj.getCompositeModifications().isEmpty()) {
                                 for (CompositeModification modification: obj.getCompositeModifications()) {
                                     if(modification.getResources() != null && !modification.getResources().isEmpty()) {
