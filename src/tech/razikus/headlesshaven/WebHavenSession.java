@@ -17,6 +17,8 @@ public class WebHavenSession implements Runnable {
     private Connection connection;
     private SimpleAuthResponse authResponse;
     private PlayerHandler handler;
+    private boolean isTeleported  = false;
+    private byte[] directCookie = null;
 
     private boolean shouldClose = false;
 
@@ -64,6 +66,30 @@ public class WebHavenSession implements Runnable {
         this.errorCallbacks = new CopyOnWriteArrayList<>();
         this.widgetCallbacks = new CopyOnWriteArrayList<>();
     }
+
+    public WebHavenSession teleportIntoAnotherSession(String host, int port, String cookie) {
+        byte[] decodedCookie = haven.Utils.hex.dec(cookie);
+
+        WebHavenSession shardSession = new WebHavenSession(this.username, null);
+        shardSession.host = host;
+        shardSession.mainPort = port;
+        shardSession.directCookie = decodedCookie;
+        shardSession.password = null;
+
+        shardSession.initialChatCallbacks = new CopyOnWriteArrayList<>(this.initialChatCallbacks);
+        shardSession.initialObjectChangeCallbacks = new CopyOnWriteArrayList<>(this.initialObjectChangeCallbacks);
+        shardSession.errorCallbacks = new CopyOnWriteArrayList<>(this.errorCallbacks);
+        shardSession.widgetCallbacks = new CopyOnWriteArrayList<>(this.widgetCallbacks);
+
+        shardSession.isTeleported = true;
+
+        return shardSession;
+    }
+
+    public boolean isSessionTeleported() {
+        return this.isTeleported;
+    }
+
 
 
 
@@ -148,7 +174,7 @@ public class WebHavenSession implements Runnable {
     public void run() {
         System.out.println("CONNECTING OR RECONNECTING INTO HAVEN....");
         try {
-            this.connection = new Connection(new InetSocketAddress(host, mainPort), username);
+            this.connection = new Connection(new InetSocketAddress(host, mainPort));
             this.handler = new PlayerHandler(connection);
             if(this.initialChatCallbacks != null && !this.initialChatCallbacks.isEmpty()) {
                 for (ChatCallback cb: this.initialChatCallbacks) {
@@ -171,7 +197,11 @@ public class WebHavenSession implements Runnable {
                 }
             }
             connection.add(this.handler);
-            connection.connect(this.authResponse.getCookie());
+            if(this.directCookie != null) {
+                connection.connect(username, true, this.directCookie);
+            } else {
+                connection.connect(username, true, this.authResponse.getCookie());
+            }
             new Thread(this.handler).start();
             while (connection.alive() && !isShouldClose()) {
                 Thread.sleep(300);
@@ -180,6 +210,8 @@ public class WebHavenSession implements Runnable {
         } catch (InterruptedException e) {
             shouldClose = true;
         }
+
+        System.out.println("DISCONNECTED FROM HAVEN.");
 
         try {
             Thread.sleep(1000);
