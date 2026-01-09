@@ -31,7 +31,6 @@ import java.awt.Color;
 
 public class RootWidget extends ConsoleHost implements UI.Notice.Handler, Widget.CursorQuery.Handler, Console.Directory {
     public static final Text.Foundry msgfoundry = new Text.Foundry(Text.dfont, 14);
-    public static final Resource defcurs = Resource.local().loadwait("gfx/hud/curs/arw");
     public boolean modtip = false;
     Profile guprof, grprof, ggprof;
     private Text lastmsg;
@@ -42,15 +41,13 @@ public class RootWidget extends ConsoleHost implements UI.Notice.Handler, Widget
 	setfocusctl(true);
 	hasfocus = true;
     }
-	
+
     public boolean getcurs(CursorQuery ev) {
-	Resource ret = defcurs;
 	if(cursor != null) {
 	    try {
-		ret = cursor.get();
+		ev.set(cursor.get());
 	    } catch(Loading l) {}
 	}
-	ev.set(ret);
 	return(false);
     }
 
@@ -105,28 +102,24 @@ public class RootWidget extends ConsoleHost implements UI.Notice.Handler, Widget
 	    if(args.length == 1) {
 		ui.msg((String)args[0]);
 	    } else {
-		ui.loader.defer(() -> {
-			int a = 0;
-			UI.SimpleMessage info = new UI.InfoMessage((String)args[a++]);
-			if(args[a] instanceof Color)
-			    info.color = (Color)args[a++];
-			if(args.length > a) {
-			    Indir<Resource> res = ui.sess.getresv(args[a++]);
-			    info.sfx = (res == null) ? null : Audio.resclip(res.get());
-			}
-			ui.msg(info);
-		    }, null);
+		int a = 0;
+		UI.SimpleMessage info = new UI.InfoMessage((String)args[a++]);
+		if(args[a] instanceof Color)
+		    info.color = (Color)args[a++];
+		if(args.length > a) {
+		    Indir<Resource> res = ui.sess.getresv(args[a++]);
+		    info.sfx = (res == null) ? null : Audio.resclip(res.get());
+		}
+		ui.msg(info);
 	    }
 	} else if(msg == "msg2") {
-	    ui.loader.defer(() -> {
-		    Resource res = ui.sess.getresv(args[0]).get();
-		    UI.Notice.Factory fac = res.getcode(UI.Notice.Factory.class, true);
-		    ui.msg(fac.format(new OwnerContext() {
-			    public <T> T context(Class<T> cl) {
-				return(wdgctx.context(cl, RootWidget.this));
-			    }
-			}, Utils.splice(args, 1)));
-		}, null);
+	    Resource res = ui.sess.getresv(args[0]).get();
+	    UI.Notice.Factory fac = res.getcode(UI.Notice.Factory.class, true);
+	    ui.msg(fac.format(new OwnerContext() {
+		    public <T> T context(Class<T> cl) {
+			return(wdgctx.context(cl, RootWidget.this));
+		    }
+		}, Utils.splice(args, 1)));
 	} else if(msg == "sfx") {
 	    int a = 0;
 	    Indir<Resource> resid = ui.sess.getresv(args[a++]);
@@ -160,11 +153,11 @@ public class RootWidget extends ConsoleHost implements UI.Notice.Handler, Widget
 	msgtime = Utils.rtime();
     }
 
-    public boolean msg(UI.NoticeEvent ev) {
-	if(ev.propagate(this))
+    public boolean msg(UI.Notice msg) {
+	if(msg.handler(this))
 	    return(true);
-	msg(ev.msg.message(), ev.msg.color());
-	ui.sfxrl(ev.msg.sfx());
+	msg(msg.message(), msg.color());
+	ui.sfxrl(msg.sfx());
 	return(true);
     }
 

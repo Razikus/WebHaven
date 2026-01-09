@@ -28,7 +28,10 @@ package haven;
 
 import java.io.*;
 import java.net.*;
+import java.nio.*;
+import java.nio.channels.*;
 import java.util.*;
+import java.util.function.*;
 import javax.net.ssl.*;
 import java.security.cert.*;
 import java.security.SecureRandom;
@@ -37,7 +40,8 @@ import java.math.BigInteger;
 public class AuthClient implements Closeable {
     public static final Config.Variable<Boolean> strictcert = Config.Variable.propb("haven.auth-cert-strict", true);
     private static final SslHelper ssl;
-    private final Socket sk;
+    private SocketChannel sk;
+    private SslChannel ssk;
     private final InputStream skin;
     private final OutputStream skout;
     
@@ -52,20 +56,77 @@ public class AuthClient implements Closeable {
 	}
     }
 
-    public AuthClient(String host, int port) throws IOException {
+    /* XXX: This layer exists only because some (primarily Russian?)
+     * ISPs seem to do some sort of "transparent" SSL injection. Since
+     * they're hardly targetting Haven specifically, try to get around
+     * it by just mildly obfuscating the SSL signatures. */
+    public static class Obfuscation implements ByteChannel {
+	public final ByteChannel bk;
+	public byte key = (byte)0xa5;
+	private boolean senthead = false;
+
+	public Obfuscation(ByteChannel bk) {
+	    this.bk = bk;
+	}
+
+	private void obf(ByteBuffer data, int a, int b) {
+	    for(int i = a; i < b; i++)
+		data.put(i, (byte)(data.get(i) ^ key));
+	}
+
+	public int read(ByteBuffer dst) throws IOException {
+	    int rv = bk.read(dst);
+	    obf(dst, dst.position() - rv, dst.position());
+	    return(rv);
+	}
+
+	public int write(ByteBuffer src) throws IOException {
+	    if(!senthead) {
+		ByteBuffer head = ByteBuffer.wrap(new byte[] {
+			'H', 'O', 'B', 'F', key,
+		    });
+		while(head.hasRemaining())
+		    bk.write(head);
+		senthead = true;
+	    }
+	    obf(src, src.position(), src.limit());
+	    int rv = bk.write(src);
+	    obf(src, src.position(), src.limit());
+	    return(rv);
+	}
+
+	public void close() throws IOException {bk.close();}
+	public boolean isOpen() {return(bk.isOpen());}
+    }
+
+    private void connect(String host, int port, boolean obf) throws IOException {
 	boolean fin = false;
-	SSLSocket sk = ssl.connect(host, port);
+	sk = Utils.connect(host, port);
 	try {
+	    ssk = new SslChannel(obf ? new Obfuscation(sk) : sk, ssl.engine(host, port));
+	    ssk.handshake();
 	    if(strictcert.get())
-		checkname(host, sk.getSession());
-	    this.sk = sk;
-	    skin = sk.getInputStream();
-	    skout = sk.getOutputStream();
+		ssk.checkname(host);
 	    fin = true;
 	} finally {
 	    if(!fin)
 		sk.close();
 	}
+    }
+
+    public AuthClient(String host, int port) throws IOException {
+	try {
+	    connect(host, port, false);
+	} catch(IOException e) {
+	    try {
+		connect(host, port, true);
+	    } catch(Throwable t) {
+		t.addSuppressed(e);
+		throw(t);
+	    }
+	}
+	skin = Channels.newInputStream(ssk);
+	skout = Channels.newOutputStream(ssk);
     }
 
     private void checkname(String host, SSLSession sess) throws IOException {
@@ -107,7 +168,11 @@ public class AuthClient implements Closeable {
     }
 
     public SocketAddress address() {
-	return(sk.getRemoteSocketAddress());
+	try {
+	    return(sk.getRemoteAddress());
+	} catch(IOException e) {
+	    throw(new RuntimeException(e));
+	}
     }
 
     public byte[] getcookie() throws IOException {
@@ -115,6 +180,16 @@ public class AuthClient implements Closeable {
 	String stat = rpl.string();
 	if(stat.equals("ok")) {
 	    return(rpl.bytes(32));
+	} else {
+	    throw(new RuntimeException("Unexpected reply `" + stat + "' from auth server"));
+	}
+    }
+
+    public String getalias() throws IOException {
+	Message rpl = cmd("logalias");
+	String stat = rpl.string();
+	if(stat.equals("ok")) {
+	    return(rpl.string());
 	} else {
 	    throw(new RuntimeException("Unexpected reply `" + stat + "' from auth server"));
 	}
@@ -168,7 +243,7 @@ public class AuthClient implements Closeable {
     }
     
     public void close() throws IOException {
-	sk.close();
+	ssk.close();
     }
 
     private void sendmsg(MessageBuf msg) throws IOException {
@@ -296,7 +371,7 @@ public class AuthClient implements Closeable {
 	    BigInteger x = b2i(phash);
 	    byte[] ab = new byte[32];
 	    new SecureRandom().nextBytes(ab);
-	    BigInteger a = b2i(ab);
+	    BigInteger a = b2i(ab).mod(N);
 	    BigInteger A = g.modPow(a, N);
 	    BigInteger u = b2i(Digest.hash(digest, i2b(A), i2b(B)));
 	    BigInteger S = B.subtract(k.multiply(g.modPow(x, N))).mod(N).modPow(a.add(u.multiply(x)), N);
@@ -333,6 +408,10 @@ public class AuthClient implements Closeable {
 		return(Digest.hash(Digest.SHA256, pw));
 	    } else if(Utils.eq(spec[0], "pbkdf2")) {
 		return(Digest.pbkdf2(Digest.HMAC.of(Digest.SHA256, pw), (byte[])spec[2], 1 << Utils.iv(spec[1]), 32));
+	    } else if(Utils.eq(spec[0], "argon2")) {
+		return(new Argon2(Argon2.Type.ID, Utils.iv(spec[1]), 1 << Utils.iv(spec[2]), Utils.iv(spec[3])).hash(pw, (byte[])spec[4], 32));
+	    } else if(Utils.eq(spec[0], "pfcrypt")) {
+		return(Pufferfish2.hash(pw, (byte[])spec[3], Utils.iv(spec[1]), Utils.iv(spec[2])));
 	    } else {
 		throw(new AuthException("Unknown password prehash: " + spec[0]));
 	    }
@@ -427,7 +506,7 @@ public class AuthClient implements Closeable {
 				return;
 			    }
 			    System.out.println(acct);
-			    System.out.println(Utils.byte2hex(test.getcookie()));
+			    System.out.println(Utils.hex.enc(test.getcookie()));
 			} finally {
 			    test.close();
 			}

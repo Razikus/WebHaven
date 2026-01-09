@@ -27,6 +27,8 @@ public class PlayerHandler implements Connection.Callback, Runnable {
     private boolean firstMessageArrived = false;
     private boolean connClosed = false;
 
+    private boolean sesKeyArrived;
+
     private long started;
 
     public PlayerHandler(Connection connection) {
@@ -36,6 +38,7 @@ public class PlayerHandler implements Connection.Callback, Runnable {
         this.pseudoGlobManager = new PseudoGlobManager(resourceManager);
         this.widgetManager = new PseudoWidgetManager(this.resourceManager, chatCallbacks, errorCallbacks, widgetCallbacks);
         this.objectManager = new ObjectManager(resourceManager, widgetManager, objectChangeCallbacks);
+        this.sesKeyArrived = false;
 
     }
 
@@ -157,13 +160,8 @@ public class PlayerHandler implements Connection.Callback, Runnable {
             String resname = msg.string();
             int resver = msg.uint16();
             resourceManager.addResource(new ResourceInformation(resid, resname, resver));
-        } else if (msg.type == RMessage.RMSG_SFX) {
-            System.out.println("SFX");
-        } else if (msg.type == RMessage.RMSG_MUSIC) {
-            String resnm = msg.string();
-            int resver = msg.uint16();
-            System.out.println("MUSIC");
-        } else if (msg.type == RMessage.RMSG_SESSKEY) {
+        }else if (msg.type == RMessage.RMSG_SESSKEY) {
+            this.sesKeyArrived = true;
             System.out.println("SESKEY");
         } else {
             throw (new RuntimeException("Unknown rmsg type: " + msg.type + " " + msg));

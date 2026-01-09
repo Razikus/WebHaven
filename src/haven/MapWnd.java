@@ -171,6 +171,7 @@ public class MapWnd extends Window implements Console.Directory {
 		    return(true);
 		}
 	    }
+	    /* XXX: Shift-clicks that do not drag should be propagated to the map. */
 	    if((ev.b == 1) && (checkhit(c) || ui.modshift)) {
 		MapWnd.this.drag(parentpos(MapWnd.this, c));
 		return(true);
@@ -805,6 +806,7 @@ public class MapWnd extends Window implements Console.Directory {
 	}
 
 	public void tick(double dt) {
+	    super.tick(dt);
 	    if(!th.isAlive())
 		destroy();
 	}
@@ -846,6 +848,7 @@ public class MapWnd extends Window implements Console.Directory {
 	}
 
 	public void tick(double dt) {
+	    super.tick(dt);
 	    if(!th.isAlive())
 		destroy();
 	}

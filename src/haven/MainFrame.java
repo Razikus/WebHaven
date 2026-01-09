@@ -43,15 +43,33 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
     boolean fullscreen;
     DisplayMode fsmode = null, prefs = null;
     Coord prefssz = null;
+
+    public static void initlocale() {
+	try {
+	    /* XXX? Localization is nice and all, but the game as a
+	     * whole currently isn't internationalized, so using the
+	     * local settings for things like number formatting just
+	     * leads to inconsistency.
+	     *
+	     * The locale still seems to influence AWT default font
+	     * selection, though. This should be investigated. */
+	    Locale.setDefault(Locale.US);
+	} catch(Exception e) {
+	    new Warning(e, "locale initialization failed").issue();
+	}
+    }
 	
     public static void initawt() {
 	try {
 	    System.setProperty("apple.awt.application.name", "Haven & Hearth");
 	    javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
-	} catch(Exception e) {}
+	} catch(Exception e) {
+	    new Warning(e, "AWT initialization failed").issue();
+	}
     }
 
     static {
+	initlocale();
 	initawt();
     }
 	
@@ -256,12 +274,13 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
     }
 
     public static Session connect(Object[] args) {
-	String username;
+	Session.User acct;
 	byte[] cookie;
 	if((Bootstrap.authuser.get() != null) && (Bootstrap.authck.get() != null)) {
-	    username = Bootstrap.authuser.get();
+	    acct = new Session.User(Bootstrap.authuser.get());
 	    cookie = Bootstrap.authck.get();
 	} else {
+	    String username;
 	    if(Bootstrap.authuser.get() != null) {
 		username = Bootstrap.authuser.get();
 	    } else {
@@ -275,7 +294,7 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
 		AuthClient cl = new AuthClient((Bootstrap.authserv.get() == null) ? Bootstrap.defserv.get() : Bootstrap.authserv.get(), Bootstrap.authport.get());
 		try {
 		    try {
-			username = new AuthClient.TokenCred(username, Utils.hex2byte(token)).tryauth(cl);
+			acct = new Session.User(new AuthClient.TokenCred(username, Utils.hex.dec(token)).tryauth(cl));
 		    } catch(AuthClient.Credentials.AuthException e) {
 			throw(new ConnectionError("authentication with saved token failed"));
 		    }
@@ -288,7 +307,7 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
 	    }
 	}
 	try {
-	    return(new Session(new java.net.InetSocketAddress(java.net.InetAddress.getByName(Bootstrap.defserv.get()), Bootstrap.mainport.get()), username, cookie, args));
+	    return(new Session(new java.net.InetSocketAddress(java.net.InetAddress.getByName(Bootstrap.defserv.get()), Bootstrap.mainport.get()), acct, Connection.encrypt.get(), cookie, args));
 	} catch(Connection.SessionError e) {
 	    throw(new ConnectionError(e.getMessage()));
 	} catch(InterruptedException exc) {

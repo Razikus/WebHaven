@@ -116,7 +116,7 @@ public class RUtils {
 	    slots.remove(slot);
 	}
 
-	public static <R extends RenderTree.Node> StateNode from(R r, Supplier<? extends Op> st) {
+	public static <R extends RenderTree.Node> StateNode<R> of(R r, Supplier<? extends Op> st) {
 	    return(new StateNode<R>(r) {
 		    protected Op state() {return(st.get());}
 		});
@@ -137,7 +137,7 @@ public class RUtils {
 	    update();
 	}
 
-	public static <R extends RenderTree.Node> StateTickNode from(R r, Supplier<? extends Op> st) {
+	public static <R extends RenderTree.Node> StateTickNode<R> of(R r, Supplier<? extends Op> st) {
 	    return(new StateTickNode<R>(r) {
 		    protected Op state() {return(st.get());}
 		});

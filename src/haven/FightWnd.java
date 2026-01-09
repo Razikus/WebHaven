@@ -30,7 +30,7 @@ import java.util.*;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-import static haven.CharWnd.attrf;
+import static haven.CharWnd.*;
 import static haven.Window.wbox;
 import static haven.Inventory.invsq;
 
@@ -46,10 +46,6 @@ public class FightWnd extends Widget {
     private final ImageInfoBox info;
     private final Label count;
     private final Map<Indir<Resource>, Object[]> actrawinfo = new HashMap<>();
-
-    public static interface IconInfo {
-	public void draw(BufferedImage img, Graphics g);
-    }
 
     private static final OwnerContext.ClassResolver<FightWnd> actxr = new OwnerContext.ClassResolver<FightWnd>()
 	.add(FightWnd.class, wdg -> wdg)
@@ -102,21 +98,7 @@ public class FightWnd extends Widget {
 	public <T> T context(Class<T> cl) {return(actxr.context(cl, FightWnd.this));}
 
 	public BufferedImage rendericon() {
-	    BufferedImage ret = res.get().flayer(Resource.imgc).scaled();
-	    Graphics g = null;
-	    for(ItemInfo inf : info()) {
-		if(inf instanceof IconInfo) {
-		    if(g == null) {
-			BufferedImage buf = TexI.mkbuf(PUtils.imgsz(ret));
-			g = buf.getGraphics();
-			ret = buf;
-		    }
-		    ((IconInfo)inf).draw(ret, g);
-		}
-	    }
-	    if(g != null)
-		g.dispose();
-	    return(ret);
+	    return(IconInfo.render(res.get().flayer(Resource.imgc).scaled(), info()));
 	}
 
 	private Tex icon = null;
@@ -152,68 +134,6 @@ public class FightWnd extends Widget {
 	    u += act.u;
 	count.settext(String.format("Used: %d/%d", u, maxact));
 	count.setcolor((u > maxact)?Color.RED:Color.WHITE);
-    }
-
-    public static class ImageInfoBox extends Widget {
-	private Tex img;
-	private Indir<Tex> loading;
-	private final Scrollbar sb;
-
-	public ImageInfoBox(Coord sz) {
-	    super(sz);
-	    sb = adda(new Scrollbar(sz.y, 0, 1), sz.x, 0, 1, 0);
-	}
-
-	public void drawbg(GOut g) {
-	    g.chcolor(0, 0, 0, 128);
-	    g.frect(Coord.z, sz);
-	    g.chcolor();
-	}
-
-	public Coord marg() {return(new Coord(10, 10));}
-
-	public void tick(double dt) {
-	    if(loading != null) {
-		try {
-		    set(loading.get());
-		    loading = null;
-		} catch(Loading l) {
-		}
-	    }
-	    super.tick(dt);
-	}
-
-	public void draw(GOut g) {
-	    drawbg(g);
-	    if(img != null)
-		g.image(img, marg().sub(0, sb.val));
-	    super.draw(g);
-	}
-
-	public void set(Tex img) {
-	    this.img = img;
-	    if(img != null) {
-		sb.max = img.sz().y + (marg().y * 2) - sz.y;
-		sb.val = 0;
-	    } else {
-		sb.max = sb.val = 0;
-	    }
-	}
-	public void set(Indir<Tex> loading) {
-	    this.loading = loading;
-	}
-
-	public boolean mousewheel(MouseWheelEvent ev) {
-	    sb.ch(ev.a * 20);
-	    return(true);
-	}
-
-	public void resize(Coord sz) {
-	    super.resize(sz);
-	    sb.c = new Coord(sz.x - sb.sz.x, 0);
-	    sb.resize(sz.y);
-	    set(img);
-	}
     }
 
     public class Actions extends SListBox<Action, Widget> {
@@ -730,7 +650,7 @@ public class FightWnd extends Widget {
 	    List<Action> acts = new ArrayList<Action>();
 	    int a = 0;
 	    while(true) {
-		int resid = (Integer)args[a++];
+		int resid = Utils.iv(args[a++]);
 		if(resid < 0)
 		    break;
 		int av = Utils.iv(args[a++]);
@@ -745,7 +665,7 @@ public class FightWnd extends Widget {
 	    this.acts = acts;
 	    actlist.loading = true;
 	} else if(nm == "tt") {
-	    Indir<Resource> res = ui.sess.getres((Integer)args[0]);
+	    Indir<Resource> res = ui.sess.getresv(args[0]);
 	    Object[] rawinfo = (Object[])args[1];
 	    actrawinfo.put(res, rawinfo);
 	} else if(nm == "used") {
@@ -753,7 +673,7 @@ public class FightWnd extends Widget {
 	    for(Action act : acts)
 		act.u(0);
 	    for(int i = 0; i < order.length; i++) {
-		int resid = (Integer)args[a++];
+		int resid = Utils.iv(args[a++]);
 		if(resid < 0) {
 		    order[i] = null;
 		    continue;

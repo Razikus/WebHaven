@@ -7,6 +7,7 @@ import haven.Resource;
 import tech.razikus.headlesshaven.*;
 import tech.razikus.headlesshaven.bot.automation.AutoLoginCharCallback;
 import tech.razikus.headlesshaven.bot.automation.DiscordWebhook;
+import tech.razikus.headlesshaven.bot.automation.OnCharLoggedInWaiter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,12 +60,23 @@ public class AroundVisionProgram extends AbstractProgram{
                 setShouldClose(true);
                 return;
             }
-            session.addWidgetCallback(new AutoLoginCharCallback(altname, session));
+
+
+            OnCharLoggedInWaiter waiter = new OnCharLoggedInWaiter();
+
+            session.addWidgetCallback(new AutoLoginCharCallback(altname, session, waiter));
 
             Thread sessionThread = new Thread(session);
             sessionThread.start();
 
-            this.session = session;
+            WebHavenSession sessionWaited = waiter.waitForSession();
+            if(sessionWaited.isSessionTeleported()) {
+                sessionThread.interrupt();
+                sessionThread = new Thread(sessionWaited);
+                sessionThread.start();
+            }
+
+            this.session = sessionWaited;
             Thread programThread = new Thread(this::sessionHandler);
             programThread.start();
 

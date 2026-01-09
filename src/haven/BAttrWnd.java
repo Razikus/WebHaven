@@ -271,7 +271,7 @@ public class BAttrWnd extends Widget {
 		    nm = buf.string();
 		    sort = buf.int16();
 		} else {
-		    throw(new Resource.LoadException("unknown foodev version: " + ver, res));
+		    throw(new Resource.UnknownFormatException(res, "foodev version", ver));
 		}
 	    }
 
@@ -346,13 +346,14 @@ public class BAttrWnd extends Widget {
 		    enew = null;
 		} catch(Loading l) {}
 	    }
+	    Indir<Resource> trev = this.trev;
 	    if(trev != null) {
 		try {
 		    Collections.sort(etr, dcmp);
-		    ui.msg(String.format("You gained " + Loading.waitfor(trev).flayer(Event.class).nm));
+		    ui.loader.defer(() -> ui.msg(String.format("You gained " + trev.get().flayer(Event.class).nm), Color.WHITE, null), null);
 		    trol = new TexI(mktrol(etr, trev));
 		    trtm = Utils.rtime();
-		    trev = null;
+		    this.trev = null;
 		} catch(Loading l) {}
 	    }
 	}
