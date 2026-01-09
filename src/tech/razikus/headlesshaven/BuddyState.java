@@ -5,16 +5,48 @@ import java.util.Objects;
 public class BuddyState {
     private Integer id;
     private String name;
-    private Integer R;
-    private Integer G;
-    private Integer B;
+    private Integer online; // 1 - online, 0 - offline, -1 - memorized/unkinned
+    private Integer group;
+    private Integer seen;
 
-    public BuddyState(Integer id, String name, Integer r, Integer g, Integer b) {
+
+    public static final int[] GROUP_COLORS = new int[] {
+            0xFFFFFF,
+            0x00FF00,
+            0xFF0000,
+            0x0000FF,
+            0x00FFFF,
+            0xFFFF00,
+            0xFF00FF,
+            0xFF0080,
+    };
+
+    public BuddyState(Integer id, String name, Integer online, Integer group, Integer seen) {
         this.id = id;
         this.name = name;
-        R = r;
-        G = g;
-        B = b;
+        this.online = online;
+        this.group = group;
+        this.seen = seen;
+    }
+
+    public boolean isOnline() {
+        return online != null && online == 1;
+    }
+
+    public boolean isKinned() {
+        return online != null && online >= 0;
+    }
+
+    public boolean wasSeen() { // ability to do describe
+        return seen != null && seen == 1;
+    }
+
+
+    public int getGroupColor() {
+        if (group != null && group >= 0 && group < GROUP_COLORS.length) {
+            return GROUP_COLORS[group];
+        }
+        return 0xFFFFFF;
     }
 
     public Integer getId() {
@@ -33,28 +65,28 @@ public class BuddyState {
         this.name = name;
     }
 
-    public Integer getR() {
-        return R;
+    public Integer getOnline() {
+        return online;
     }
 
-    public void setR(Integer r) {
-        R = r;
+    public void setOnline(Integer online) {
+        this.online = online;
     }
 
-    public Integer getG() {
-        return G;
+    public Integer getGroup() {
+        return group;
     }
 
-    public void setG(Integer g) {
-        G = g;
+    public void setGroup(Integer group) {
+        this.group = group;
     }
 
-    public Integer getB() {
-        return B;
+    public Integer getSeen() {
+        return seen;
     }
 
-    public void setB(Integer b) {
-        B = b;
+    public void setSeen(Integer seen) {
+        this.seen = seen;
     }
 
     @Override
@@ -62,22 +94,11 @@ public class BuddyState {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BuddyState that = (BuddyState) o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(R, that.R) && Objects.equals(G, that.G) && Objects.equals(B, that.B);
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(online, that.online) && Objects.equals(group, that.group) && Objects.equals(seen, that.seen);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, R, G, B);
-    }
-
-    @Override
-    public String toString() {
-        return "BuddyState{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", R=" + R +
-                ", G=" + G +
-                ", B=" + B +
-                '}';
+        return Objects.hash(id, name, online, group, seen);
     }
 }
