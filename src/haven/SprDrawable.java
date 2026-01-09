@@ -29,12 +29,12 @@ package haven;
 import java.util.*;
 import haven.render.*;
 
-public class SprDrawable extends Drawable {
+public class SprDrawable extends Drawable implements Sprite.Owner {
     public final Sprite spr;
 
     public SprDrawable(Gob gob, Sprite.Mill<?> mk) {
 	super(gob);
-	this.spr = mk.create(gob);
+	this.spr = mk.create(this);
     }
 
     public SprDrawable(Gob gob, Sprite spr) {
@@ -63,4 +63,17 @@ public class SprDrawable extends Drawable {
     public Resource getres() {
 	return(null);
     }
+
+    /* XXX: I don't know that this ugliness should be necessary. */
+    public static <S extends Sprite> S apply(Gob gob, Sprite.Mill<S> mk) {
+	SprDrawable d = new SprDrawable(gob, mk);
+	@SuppressWarnings("unchecked") S ret = (S)d.spr;
+	gob.setattr(d);
+	return(ret);
+    }
+
+    private static final ClassResolver<SprDrawable> ctxr = new ClassResolver<SprDrawable>()
+	.add(SprDrawable.class, d -> d);
+    public <T> T context(Class<T> cl) {return(OwnerContext.orparent(cl, ctxr.context(cl, this, false), gob));}
+    public Random mkrandoom() {return(gob.mkrandoom());}
 }

@@ -36,7 +36,7 @@ import haven.resutil.Curiosity;
 import static haven.PUtils.*;
 
 public class CharWnd extends Window {
-    public static final RichText.Foundry ifnd = new RichText.Foundry(Resource.remote(), java.awt.font.TextAttribute.FAMILY, "SansSerif", java.awt.font.TextAttribute.SIZE, UI.scale(9)).aa(true);
+    public static final RichText.Foundry ifnd = new RichText.Foundry(RichText.ImageSource.res(Resource.remote()), java.awt.font.TextAttribute.FAMILY, "SansSerif", java.awt.font.TextAttribute.SIZE, UI.scale(9)).aa(true);
     public static final Text.Furnace catf = new BlurFurn(new TexFurn(new Text.Foundry(Text.fraktur, 25).aa(true), Window.ctex), UI.scale(3), UI.scale(2), new Color(96, 48, 0));
     public static final Text.Furnace failf = new BlurFurn(new TexFurn(new Text.Foundry(Text.fraktur, 25).aa(true), Resource.loadimg("gfx/hud/fontred")), UI.scale(3), UI.scale(2), new Color(96, 48, 0));
     public static final Text.Foundry attrf = new Text.Foundry(Text.fraktur.deriveFont((float)Math.floor(UI.scale(18.0)))).aa(true);
@@ -182,6 +182,91 @@ public class CharWnd extends Window {
 		}
 	    }
 	    super.draw(g);
+	}
+    }
+
+    public static class ImageInfoBox extends Widget {
+	private Tex img;
+	private Indir<Tex> loading;
+	private final Scrollbar sb;
+
+	public ImageInfoBox(Coord sz) {
+	    super(sz);
+	    sb = adda(new Scrollbar(sz.y, 0, 1), sz.x, 0, 1, 0);
+	}
+
+	public void drawbg(GOut g) {
+	    g.chcolor(0, 0, 0, 128);
+	    g.frect(Coord.z, sz);
+	    g.chcolor();
+	}
+
+	public Coord marg() {return(UI.scale(10, 10));}
+
+	public void tick(double dt) {
+	    if(loading != null) {
+		try {
+		    set(loading.get());
+		    loading = null;
+		} catch(Loading l) {
+		}
+	    }
+	    super.tick(dt);
+	}
+
+	public void draw(GOut g) {
+	    drawbg(g);
+	    if(img != null)
+		g.image(img, marg().sub(0, sb.val));
+	    super.draw(g);
+	}
+
+	public void set(Tex img) {
+	    this.img = img;
+	    if(img != null) {
+		sb.max = img.sz().y + (marg().y * 2) - sz.y;
+		sb.val = 0;
+	    } else {
+		sb.max = sb.val = 0;
+	    }
+	}
+	public void set(Indir<Tex> loading) {
+	    this.loading = loading;
+	}
+
+	public boolean mousewheel(MouseWheelEvent ev) {
+	    sb.ch(ev.a * 20);
+	    return(true);
+	}
+
+	public void resize(Coord sz) {
+	    super.resize(sz);
+	    sb.c = new Coord(sz.x - sb.sz.x, 0);
+	    sb.resize(sz.y);
+	    set(img);
+	}
+    }
+
+    public static interface IconInfo {
+	public void draw(BufferedImage img, Graphics g);
+
+	public static BufferedImage render(BufferedImage base, List<ItemInfo> info) {
+	    BufferedImage ret = base;
+	    Graphics g = null;
+	    for(ItemInfo inf : info) {
+		if(inf instanceof IconInfo) {
+		    if(g == null) {
+			BufferedImage buf = TexI.mkbuf(PUtils.imgsz(ret));
+			g = buf.getGraphics();
+			g.drawImage(ret, 0, 0, null);
+			ret = buf;
+		    }
+		    ((IconInfo)inf).draw(ret, g);
+		}
+	    }
+	    if(g != null)
+		g.dispose();
+	    return(ret);
 	}
     }
 

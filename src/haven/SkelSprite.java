@@ -100,9 +100,6 @@ public class SkelSprite extends Sprite implements Sprite.CUpd, EquipTarget, Spri
     public Random mkrandoom() {
 	return(owner.mkrandoom());
     }
-    @Deprecated public Resource getres() {
-	return(res);
-    }
     public Collection<Location.Chain> getloc() {
 	Collection<Location.Chain> ret = new ArrayList<>(slots.size());
 	for(RenderTree.Slot slot : slots)
@@ -110,7 +107,8 @@ public class SkelSprite extends Sprite implements Sprite.CUpd, EquipTarget, Spri
 	return(ret);
     }
     public double getv() {
-	return((owner instanceof Skeleton.ModOwner) ? ((Skeleton.ModOwner)owner).getv() : 0);
+	Skeleton.ModOwner parent = owner.fcontext(Skeleton.ModOwner.class, false);
+	return((parent == null) ? 0 : parent.getv());
     }
 
     /* XXX: It's ugly to snoop inside a wrapping, but I can't think of
@@ -157,7 +155,7 @@ public class SkelSprite extends Sprite implements Sprite.CUpd, EquipTarget, Spri
 		return(Pipe.Op.compose(ops));
 	    };
 	}
-	return(RUtils.StateTickNode.from(wrap, rst));
+	return(RUtils.StateTickNode.of(wrap, rst));
     }
 
     public void iparts(int mask, Collection<RenderTree.Node> rbuf, Collection<Runnable> tbuf, Collection<Consumer<Render>> gbuf) {

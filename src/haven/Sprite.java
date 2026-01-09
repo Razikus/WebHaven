@@ -39,15 +39,12 @@ public abstract class Sprite implements RenderTree.Node {
     public static List<Factory> factories = new LinkedList<Factory>();
     static {
 	factories.add(SpriteLink.sfact);
-	factories.add(SkelSprite.fact);
-	factories.add(AnimSprite.fact);
-	factories.add(StaticSprite.fact);
+	factories.add(ModSprite.fact);
 	factories.add(AudioSprite.fact);
     }
 
     public interface Owner extends OwnerContext {
 	public Random mkrandoom();
-	@Deprecated public Resource getres();
     }
 
     public class RecOwner implements Owner {
@@ -59,6 +56,17 @@ public abstract class Sprite implements RenderTree.Node {
 	public String toString() {
 	    return(String.format("#<rec-owner of %s, owned by %s>", Sprite.this, owner));
 	}
+    }
+
+    public static class UIOwner implements Owner {
+	public final Widget wdg;
+
+	public UIOwner(Widget wdg) {
+	    this.wdg = wdg;
+	}
+
+	public Random mkrandoom() {return(new Random());}
+	public <T> T context(Class<T> cl) {return(Widget.wdgctx.context(cl, wdg));}
     }
 
     public static interface CDel {
@@ -75,10 +83,10 @@ public abstract class Sprite implements RenderTree.Node {
 	    add(new Direct<>(Factory.class));
 	    add(new StaticCall<>(Factory.class, "mksprite", Sprite.class, new Class<?>[] {Owner.class, Resource.class, Message.class},
 				 (make) -> (owner, res, sdt) -> make.apply(new Object[] {owner, res, sdt})));
-	    add(new Construct<>(Factory.class, Sprite.class, new Class<?>[] {Owner.class, Resource.class},
-				(cons) -> (owner, res, sdt) -> cons.apply(new Object[] {owner, res})));
 	    add(new Construct<>(Factory.class, Sprite.class, new Class<?>[] {Owner.class, Resource.class, Message.class},
 				(cons) -> (owner, res, sdt) -> cons.apply(new Object[] {owner, res, sdt})));
+	    add(new Construct<>(Factory.class, Sprite.class, new Class<?>[] {Owner.class, Resource.class},
+				(cons) -> (owner, res, sdt) -> cons.apply(new Object[] {owner, res})));
 	}}
 
     @Resource.PublishedCode(name = "spr", instancer = FactMaker.class)
@@ -88,6 +96,37 @@ public abstract class Sprite implements RenderTree.Node {
 
     public interface Mill<S extends Sprite> {
 	public S create(Owner owner);
+
+	public static class FromRes implements Mill<Sprite> {
+	    public final Indir<Resource> res;
+	    public final byte[] sdt;
+
+	    public FromRes(Indir<Resource> res, byte[] sdt) {
+		this.res = res;
+		this.sdt = sdt;
+	    }
+
+	    public Sprite create(Owner owner) {
+		return(Sprite.create(owner, res.get(), new MessageBuf(sdt)));
+	    }
+
+	    public String toString() {
+		return(String.format("#<res-mill %s %s>", res, Utils.hex.enc(sdt)));
+	    }
+	}
+
+	public static Mill<Sprite> of(Indir<Resource> res, byte[] sdt) {
+	    return(new FromRes(res, sdt));
+	}
+	public static Mill<Sprite> of(Indir<Resource> res, Message sdt) {
+	    return(new FromRes(res, sdt.bytes()));
+	}
+	public static Mill<Sprite> of(Resource res, Message sdt) {
+	    return(new FromRes(res.indir(), sdt.bytes()));
+	}
+	public static Mill<Sprite> of(ResData dat) {
+	    return(new FromRes(dat.res, dat.sdt.bytes()));
+	}
     }
 
     public static class ResourceException extends RuntimeException {

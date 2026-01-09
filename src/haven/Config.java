@@ -83,11 +83,13 @@ public class Config {
 
     public String getprop(String name, String def) {
 	String ret;
-	if((ret = jarprops.getProperty(name)) != null)
+	if((ret = Utils.getprop(name, null)) != null)
 	    return(ret);
 	if((ret = localprops.getProperty(name)) != null)
 	    return(ret);
-	return(Utils.getprop(name, def));
+	if((ret = jarprops.getProperty(name)) != null)
+	    return(ret);
+	return(def);
     }
 
     public static final Path parsepath(String p) {
@@ -180,7 +182,7 @@ public class Config {
 	    return(prop(name, Double::parseDouble, () -> defval));
 	}
 	public static Variable<byte[]> propb(String name, byte[] defval) {
-	    return(prop(name, Utils::hex2byte, () -> defval));
+	    return(prop(name, Utils.hex::dec, () -> defval));
 	}
 	public static Variable<URI> propu(String name, URI defval) {
 	    return(prop(name, Config::parseuri, () -> defval));
@@ -312,7 +314,7 @@ public class Config {
 		Bootstrap.authuser.set(opt.arg);
 		break;
 	    case 'C':
-		Bootstrap.authck.set(Utils.hex2byte(opt.arg));
+		Bootstrap.authck.set(Utils.hex.dec(opt.arg));
 		break;
 	    case 'p':
 		Utils.prefspec.set(opt.arg);
