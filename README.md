@@ -13,18 +13,18 @@ This is still alpha version, more like Proof of Concept
 If you are not scared of running precompiled version of this client, and you have docker:
 ```
 
-docker run -p 7901:7901 -d razikus/webhaven:0.4
+docker run -p 7901:7901 -d razikus/webhaven:0.5
 
 open your browser on http://localhost:7901 
 
 
 OR
 
-docker run -p 7901:7901 -e AUTOLOGIN_USER=ACCNAME -e AUTOLOGIN_PASSWORD=PASSWORD -e AUTOLOGIN_CHAR=CHARNAME -d razikus/webhaven:0.4
+docker run -p 7901:7901 -e AUTOLOGIN_USER=ACCNAME -e AUTOLOGIN_PASSWORD=PASSWORD -e AUTOLOGIN_CHAR=CHARNAME -d razikus/webhaven:0.5
 
 OR HEADLESS SPOTTER 
 
-docker run -e AUTOLOGIN_CHAR=X -e AUTOLOGIN_PASSWORD=Y -e AUTOLOGIN_USER=Z -e INITIAL_PROGRAM=tech.razikus.headlesshaven.bot.PlayerSpotterProgram -e RUNNINGARG_discord_key=https://discord.com/api/webhooks/XXXX/YYY --rm razikus/webhaven:0.4
+docker run -e AUTOLOGIN_CHAR=X -e AUTOLOGIN_PASSWORD=Y -e AUTOLOGIN_USER=Z -e INITIAL_PROGRAM=tech.razikus.headlesshaven.bot.PlayerSpotterProgram -e RUNNINGARG_discord_key=https://discord.com/api/webhooks/XXXX/YYY --rm razikus/webhaven:0.5
 
 
 This will additionally init your program 
@@ -89,7 +89,7 @@ mvn clean install
 Run the compiled JAR directly:
 
 ```bash
-java -jar target/WebHafen-0.4.jar
+java -jar target/WebHafen-0.5.jar
 ```
 
 ### Using Docker

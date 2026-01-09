@@ -43,10 +43,10 @@ public class BuddyPseudoWidget extends PseudoWidget{
     private BuddyState parseArgsToBuddyState(Object[] args) {
         Integer id = (Integer) args[0];
         String name = (String) args[1];
-        Integer R = (Integer) args[2]; // @TODO ITS NOT RGB XD
-        Integer G = (Integer) args[3];
-        Integer B = (Integer) args[4];
-        return new BuddyState(id, name, R, G, B);
+        Integer online = (Integer) args[2];
+        Integer group = (Integer) args[3];
+        Integer wasseen = (Integer) args[4];
+        return new BuddyState(id, name, online, group, wasseen);
     }
 
     @Override

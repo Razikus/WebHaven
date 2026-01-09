@@ -154,6 +154,7 @@ public class PlayerSpotterProgram extends AbstractProgram{
             Set<Long> alreadyProcessed = new HashSet<>();
 
             StringBuilder EQ = new StringBuilder();
+            int discordColor = 0x000000;
             for (PseudoObject obj: session.getHandler().getObjectManager().getPseudoObjectHashMap().values()) {
                 for (ResourceInformationLazyProxy proxy: obj.getResourceInformationLazyProxies()) {
                     if (proxy.getResource().getInformation().getName().equals(toFind) && obj.getId() != session.getWidgetManager().getMyGOBId()) {
@@ -179,6 +180,7 @@ public class PlayerSpotterProgram extends AbstractProgram{
                             }
                             if(obj.getBuddyState() != null && obj.getBuddyState().getBuddyState() != null) {
                                 EQ.append(" | KNOWN AS: ").append(obj.getBuddyState().getBuddyState().getName());
+                                discordColor = obj.getBuddyState().getBuddyState().getGroupColor();
                             }
                         }
                         EQ.append("\n\n");
@@ -193,7 +195,7 @@ public class PlayerSpotterProgram extends AbstractProgram{
                 DiscordWebhook.Embed embed = new DiscordWebhook.Embed()
                         .setTitle(mess)
                         .setDescription(EQ.toString())
-                        .setColor(0x00ff00);
+                        .setColor(discordColor);
 
                 this.getManager().brodcastFromProgram(this.getProgname(), new CommandTypeWrapper(
                         "message",
@@ -215,7 +217,7 @@ public class PlayerSpotterProgram extends AbstractProgram{
                 DiscordWebhook.Embed embed = new DiscordWebhook.Embed()
                         .setTitle(mess)
                         .setDescription(EQ.toString())
-                        .setColor(0x00ff00);
+                        .setColor(discordColor);
 
                 try {
                     this.webhook.sendEmbed(embed);
