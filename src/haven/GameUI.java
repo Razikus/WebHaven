@@ -1088,7 +1088,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	if(genus != null)
 	    buf.append("/" + genus);
 	if(ui.sess != null)
-	    buf.append("/" + ui.sess.username);
+	    buf.append("/" + ui.sess.user.prsname());
 	return(buf.toString());
     }
 
@@ -1548,6 +1548,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     }
 
     public boolean msg(UI.Notice msg) {
+	if(msg.handler(this))
+	    return(true);
 	ChatUI.Channel.Message logged;
 	if(msg instanceof LogMessage)
 	    logged = ((LogMessage)msg).logmessage();

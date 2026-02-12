@@ -31,7 +31,6 @@ import java.awt.Color;
 
 public class RootWidget extends ConsoleHost implements UI.Notice.Handler, Widget.CursorQuery.Handler, Console.Directory {
     public static final Text.Foundry msgfoundry = new Text.Foundry(Text.dfont, 14);
-    public static final Resource defcurs = Resource.local().loadwait("gfx/hud/curs/arw");
     public boolean modtip = false;
     Profile guprof, grprof, ggprof;
     private Text lastmsg;
@@ -42,15 +41,13 @@ public class RootWidget extends ConsoleHost implements UI.Notice.Handler, Widget
 	setfocusctl(true);
 	hasfocus = true;
     }
-	
+
     public boolean getcurs(CursorQuery ev) {
-	Resource ret = defcurs;
 	if(cursor != null) {
 	    try {
-		ret = cursor.get();
+		ev.set(cursor.get());
 	    } catch(Loading l) {}
 	}
-	ev.set(ret);
 	return(false);
     }
 
@@ -157,6 +154,8 @@ public class RootWidget extends ConsoleHost implements UI.Notice.Handler, Widget
     }
 
     public boolean msg(UI.Notice msg) {
+	if(msg.handler(this))
+	    return(true);
 	msg(msg.message(), msg.color());
 	ui.sfxrl(msg.sfx());
 	return(true);

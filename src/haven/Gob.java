@@ -46,7 +46,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     private final LinkedList<Runnable> deferred = new LinkedList<>();
     private Loader.Future<?> deferral = null;
 
-    public static class Overlay implements RenderTree.Node {
+    public static class Overlay implements RenderTree.Node, Sprite.Owner {
 	public final int id;
 	public final Gob gob;
 	public final Sprite.Mill<?> sm;
@@ -67,7 +67,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 
 	public Overlay(Gob gob, int id, Indir<Resource> res, Message sdt) {
-	    this(gob, id, owner -> Sprite.create(owner, res.get(), sdt));
+	    this(gob, id, Sprite.Mill.of(res, sdt));
 	}
 
 	public Overlay(Gob gob, Sprite spr) {
@@ -79,7 +79,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	private void init() {
 	    if(spr == null) {
-		spr = sm.create(gob);
+		spr = sm.create(this);
 		if(old)
 		    spr.age();
 		if(added && (spr instanceof SetupMod))
@@ -143,6 +143,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    if(slots != null)
 		slots.remove(slot);
 	}
+
+	private static final ClassResolver<Overlay> ctxr = new ClassResolver<Overlay>()
+	    .add(Overlay.class, o -> o);
+	public <T> T context(Class<T> cl) {return(OwnerContext.orparent(cl, ctxr.context(cl, this, false), gob));}
+	public Random mkrandoom() {return(gob.mkrandoom());}
     }
 
     public static interface SetupMod {
@@ -809,14 +814,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
     public Random mkrandoom() {
 	return(Utils.mkrandoom(id));
-    }
-
-    @Deprecated
-    public Resource getres() {
-	Drawable d = getattr(Drawable.class);
-	if(d != null)
-	    return(d.getres());
-	return(null);
     }
 
     private static final ClassResolver<Gob> ctxr = new ClassResolver<Gob>()

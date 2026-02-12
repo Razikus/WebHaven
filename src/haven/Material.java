@@ -72,7 +72,7 @@ public class Material implements Pipe.Op {
 	    case '_': return BlendMode.Function.RSUB;
 	    case '>': return BlendMode.Function.MAX;
 	    case '<': return BlendMode.Function.MIN;
-	    default: throw(new Resource.LoadException("Unknown blend function: " + desc, res));
+	    default: throw(new Resource.UnknownFormatException(res, "blend function", desc));
 	    }
 	}
 
@@ -84,7 +84,7 @@ public class Material implements Pipe.Op {
 	    case 'A': return BlendMode.Factor.INV_SRC_ALPHA;
 	    case 'c': return BlendMode.Factor.SRC_COLOR;
 	    case 'C': return BlendMode.Factor.INV_SRC_COLOR;
-	    default: throw(new Resource.LoadException("Unknown blend factor: " + desc, res));
+	    default: throw(new Resource.UnknownFormatException(res, "blend factor", desc));
 	    }
 	}
 
@@ -93,7 +93,7 @@ public class Material implements Pipe.Op {
 	    BlendMode.Factor csrc, cdst, asrc, adst;
 	    String desc = (String)args[0];
 	    if(desc.length() < 3)
-		throw(new Resource.LoadException("Bad blend description: " + desc, res));
+		throw(new Resource.UnknownFormatException(res, "blend description", desc));
 	    cfn = fn(res, desc.charAt(0));
 	    csrc = fac(res, desc.charAt(1));
 	    cdst = fac(res, desc.charAt(2));
@@ -129,7 +129,7 @@ public class Material implements Pipe.Op {
 	    } else if(nm.equals("postmap")) {
 		return(MapMesh.postmap);
 	    } else {
-		throw(new Resource.LoadException("Unknown draw order: " + nm, res));
+		throw(new Resource.UnknownFormatException(res, "draw order", nm));
 	    }
 	}
     }
@@ -242,9 +242,12 @@ public class Material implements Pipe.Op {
     @ResName("mlink")
     public static class $mlink implements ResCons2 {
 	public Res.Resolver cons(final Resource res, Object... args) {
-	    final Indir<Resource> lres;
-	    final int id;
-	    if(args[0] instanceof String) {
+	    Indir<Resource> lres;
+	    int id;
+	    if(args[0] instanceof Indir) {
+		lres = Utils.irv(args[0]);
+		id = (args.length > 1) ? Utils.iv(args[1]) : -1;
+	    } else if(args[0] instanceof String) {
 		lres = res.pool.load((String)args[0], Utils.iv(args[1]));
 		id = (args.length > 2) ? Utils.iv(args[2]) : -1;
 	    } else {

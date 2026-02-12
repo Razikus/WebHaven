@@ -69,7 +69,7 @@ public class RemoteUI implements UI.Receiver, UI.Runner {
 	    sendua("os.version", Utils.getprop("os.version", ""));
 	    sendua("mem.heap", String.valueOf(Runtime.getRuntime().maxMemory()));
 	    sendua("cpu.num", String.valueOf(Runtime.getRuntime().availableProcessors()));
-	    sendua("ui.scale", String.valueOf(UI.scale(1.0)));
+	    sendua("ui.scale", String.format("%.2f", UI.scale(1.0)));
 	    haven.render.Environment env = ui.getenv();
 	    if(env != null) {
 		sendua("render.env", env.getClass().getSimpleName());
@@ -101,20 +101,20 @@ public class RemoteUI implements UI.Receiver, UI.Runner {
 		    int id = msg.int32();
 		    String type = msg.string();
 		    int parent = msg.int32();
-		    Object[] pargs = msg.list();
-		    Object[] cargs = msg.list();
+		    Object[] pargs = msg.list(sess.resmapper);
+		    Object[] cargs = msg.list(sess.resmapper);
 		    ui.newwidgetp(id, type, parent, pargs, cargs);
 		} else if(msg.type == RMessage.RMSG_WDGMSG) {
 		    int id = msg.int32();
 		    String name = msg.string();
-		    ui.uimsg(id, name, msg.list());
+		    ui.uimsg(id, name, msg.list(sess.resmapper));
 		} else if(msg.type == RMessage.RMSG_DSTWDG) {
 		    int id = msg.int32();
 		    ui.destroy(id);
 		} else if(msg.type == RMessage.RMSG_ADDWDG) {
 		    int id = msg.int32();
 		    int parent = msg.int32();
-		    Object[] pargs = msg.list();
+		    Object[] pargs = msg.list(sess.resmapper);
 		    ui.addwidget(id, parent, pargs);
 		} else if(msg.type == RMessage.RMSG_WDGBAR) {
 		    Collection<Integer> deps = new ArrayList<>();
@@ -148,6 +148,6 @@ public class RemoteUI implements UI.Receiver, UI.Runner {
     }
 
     public String title() {
-	return(sess.username);
+	return(sess.user.readname());
     }
 }

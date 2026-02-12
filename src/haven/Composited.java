@@ -35,12 +35,12 @@ import haven.Skeleton.PoseMod;
 public class Composited implements RenderTree.Node, EquipTarget {
     public final Skeleton skel;
     public final Pose pose;
+    public final OwnerContext eqowner;
     public Collection<Model> mod = new ArrayList<Model>();
-    public Collection<Equ> equ = new ArrayList<Equ>();
+    public Collection<Equipped> equ = new ArrayList<Equipped>();
     public Poses poses = new Poses();
     public List<MD> cmod = new LinkedList<MD>();
     public List<ED> cequ = new LinkedList<ED>();
-    public Sprite.Owner eqowner = null;
     private final Collection<RenderTree.Slot> slots = new ArrayList<>(1);
 
     public class Poses {
@@ -117,9 +117,14 @@ public class Composited implements RenderTree.Node, EquipTarget {
 	protected void done() {}
     }
 
-    public Composited(Skeleton skel) {
+    public Composited(Skeleton skel, OwnerContext eqowner) {
 	this.skel = skel;
 	this.pose = skel.new Pose(skel.bindpose);
+	this.eqowner = eqowner;
+    }
+
+    public Composited(Skeleton skel) {
+	this(skel, null);
     }
 
     public static class ModOrder extends Rendered.Order<ModOrder> {
@@ -198,91 +203,71 @@ public class Composited implements RenderTree.Node, EquipTarget {
 	}
     }
 
-    private static final OwnerContext.ClassResolver<SpriteEqu> eqctxr = new OwnerContext.ClassResolver<SpriteEqu>()
-	.add(SpriteEqu.class, eq -> eq)
+    private static final OwnerContext.ClassResolver<Equipped> eqctxr = new OwnerContext.ClassResolver<Equipped>()
+	.add(Equipped.class, eq -> eq)
 	.add(Composited.class, eq -> eq.comp());
-    public class SpriteEqu extends Equ<Sprite> implements Sprite.Owner, RandomSource {
-	private SpriteEqu(ED ed) {
-	    super(Sprite.create(eqowner, ed.res.res.get(), ed.res.sdt.clone()), ed);
+    public class Equipped implements Sprite.Owner {
+	public final Sprite spr;
+	private final RUtils.StateNode<Sprite> n;
+	public final ED desc;
+	public final int id;
+
+	private Equipped(ED ed) {
+	    this.desc = ed.clone();
+	    this.id = desc.id;
+	    this.spr = Sprite.create(this, ed.res.res.get(), ed.res.sdt.clone());
+	    Supplier<Pipe.Op> et = null;
+	    if((et == null) && ed.at.equals(""))
+		et = () -> null;
+	    if(et == null) {
+		Skeleton.BoneOffset bo = ed.res.res.get().layer(Skeleton.BoneOffset.class, ed.at);
+		if(bo != null)
+		    et = bo.from(Composited.this);
+	    }
+	    if((et == null) && (skel instanceof Skeleton.ResourceSkeleton)) {
+		Skeleton.BoneOffset bo = ((Skeleton.ResourceSkeleton)skel).res.layer(Skeleton.BoneOffset.class, ed.at);
+		if(bo != null)
+		    et = bo.from(Composited.this);
+	    }
+	    if(et == null)
+		et = Composited.this.eqpoint(ed.at, Message.nil);
+	    if(et == null)
+		throw(new RuntimeException("could not resolve transformation " + ed.at + " for equipment " + ed.res + " on skeleton " + skel));
+	    if(!ed.off.equals(Coord3f.o)) {
+		Supplier<Pipe.Op> nt = et;
+		et = () -> Pipe.Op.compose(nt.get(), Location.xlate(ed.off));
+	    }
+	    this.n = RUtils.StateNode.of(this.spr, et);
 	}
 
 	public void tick(double dt) {
-	    super.tick(dt);
-	    r.tick(dt);
+	    spr.tick(dt);
+	    n.update();
 	}
 
 	public void gtick(Render g) {
-	    super.gtick(g);
-	    r.gtick(g);
+	    spr.gtick(g);
 	}
 
 	public <T> T context(Class<T> cl) {
 	    return(OwnerContext.orparent(cl, eqctxr.context(cl, this, false), eqowner));
 	}
 
-	@Deprecated
-	public Resource getres() {
-	    return(r.res);
-	}
-
 	public Random mkrandoom() {
-	    return((eqowner != null) ? eqowner.mkrandoom() : new Random());
+	    if(eqowner != null) {
+		RandomSource rnd = eqowner.fcontext(RandomSource.class, false);
+		if(rnd != null)
+		    return(rnd.mkrandoom());
+	    }
+	    return(new Random());
 	}
 
 	public Composited comp() {
 	    return(Composited.this);
 	}
-    }
-
-    public class LightEqu extends Equ<Light> {
-	private LightEqu(ED ed) {
-	    super(ed.res.res.get().flayer(Light.Res.class).make(), ed);
-	}
-    }
-
-    public abstract class Equ<R extends RenderTree.Node> extends RUtils.StateNode<R> {
-	private final Supplier<Pipe.Op> et;
-	public final ED desc;
-	public final int id;
-	
-	private Equ(R r, ED ed) {
-	    super(r);
-	    this.desc = ed.clone();
-	    this.id = desc.id;
-	    Supplier<Pipe.Op> bt = null;
-	    if(bt == null) {
-		Skeleton.BoneOffset bo = ed.res.res.get().layer(Skeleton.BoneOffset.class, ed.at);
-		if(bo != null)
-		    bt = bo.from(Composited.this);
-	    }
-	    if((bt == null) && (skel instanceof Skeleton.ResourceSkeleton)) {
-		Skeleton.BoneOffset bo = ((Skeleton.ResourceSkeleton)skel).res.layer(Skeleton.BoneOffset.class, ed.at);
-		if(bo != null)
-		    bt = bo.from(Composited.this);
-	    }
-	    if(bt == null) {
-		Skeleton.Bone bone = skel.bones.get(ed.at);
-		if(bone != null)
-		    bt = pose.bonetrans(bone.idx);
-	    }
-	    if((bt == null) && !ed.at.equals(""))
-		throw(new RuntimeException("Transformation " + ed.at + " for equipment " + ed.res + " on skeleton " + skel + " could not be resolved"));
-	    Supplier<Pipe.Op> dbt = (bt != null) ? bt : () -> null;
-	    if((ed.off.x != 0.0f) || (ed.off.y != 0.0f) || (ed.off.z != 0.0f))
-		this.et = () -> Pipe.Op.compose(dbt.get(), Location.xlate(ed.off));
-	    else
-		this.et = dbt;
-	}
-
-	public void tick(double dt) {
-	    update();
-	}
-	public void gtick(Render g) {}
-
-	protected Pipe.Op state() {return(et.get());}
 
 	public String toString() {
-	    return(String.format("#<equ %s>", r));
+	    return(String.format("#<equ %s>", spr));
 	}
     }
 
@@ -326,7 +311,7 @@ public class Composited implements RenderTree.Node, EquipTarget {
 	public String at;
 	public ResData res;
 	public Coord3f off;
-	private Equ real;
+	private Equipped real;
 	
 	public ED(int t, String at, ResData res, Coord3f off) {
 	    this.t = t;
@@ -378,14 +363,14 @@ public class Composited implements RenderTree.Node, EquipTarget {
 	    this.base = base;
 	}
 
-	public static Desc decode(Session sess, Object[] args) {
+	public static Desc decode(Resource.Resolver sess, Object[] args) {
 	    Desc ret = new Desc();
 	    ret.base = sess.getresv(args[0]);
-	    Object[] ma = (Object[])args[1];
+	    Object[] ma = Utils.oav(args[1]);
 	    for(int i = 0; i < ma.length; i += 2) {
 		List<ResData> tex = new ArrayList<ResData>();
 		Indir<Resource> mod = sess.getresv(ma[i]);
-		Object[] ta = (Object[])ma[i + 1];
+		Object[] ta = Utils.oav(ma[i + 1]);
 		for(int o = 0; o < ta.length; o++) {
 		    Indir<Resource> tr = sess.getresv(ta[o]);
 		    Message sdt = Message.nil;
@@ -395,12 +380,12 @@ public class Composited implements RenderTree.Node, EquipTarget {
 		}
 		ret.mod.add(new MD(mod, tex));
 	    }
-	    Object[] ea = (Object[])args[2];
+	    Object[] ea = Utils.oav(args[2]);
 	    for(int i = 0; i < ea.length; i++) {
-		Object[] qa = (Object[])ea[i];
+		Object[] qa = Utils.oav(ea[i]);
 		int n = 0;
 		int t = Utils.iv(qa[n++]);
-		String at = (String)qa[n++];
+		String at = Utils.sv(qa[n++]);
 		Indir<Resource> res = sess.getresv(qa[n++]);
 		Message sdt = Message.nil;
 		if(qa[n] instanceof byte[])
@@ -441,11 +426,8 @@ public class Composited implements RenderTree.Node, EquipTarget {
 		if(mr == null)
 		    throw(new Sprite.ResourceException("Model resource contains no mesh", md.mod.get()));
 		mod = new Model(mr.m, md.id);
-		if(mr.rdat.containsKey("cz"))
-		    mod.z = Integer.parseInt(mr.rdat.get("cz"));
-		/* XXX: Actually set comp-z on borka meshes and remove me. */
-		if(md.mod.get().name.equals("gfx/borka/male") || md.mod.get().name.equals("gfx/borka/female"))
-		    mod.z = -1;
+		if(mr.info.containsKey("cz"))
+		    mod.z = Utils.iv(mr.info.get("cz"));
 		for(ResData lres : md.tex)
 		    mod.addlay(Material.fromres(matowner, lres.res.get(), new MessageBuf(lres.sdt)));
 		md.real = mod;
@@ -455,22 +437,19 @@ public class Composited implements RenderTree.Node, EquipTarget {
 	return(ret);
     }
 
-    private Collection<Equ> nequ(List<ED> nequ) {
-	Collection<Equ> ret = new ArrayList<>(nequ.size());
+    private Collection<Equipped> nequ(List<ED> nequ) {
+	Collection<Equipped> ret = new ArrayList<>(nequ.size());
 	outer: for(ED ed : nequ) {
-	    Equ ne = ed.real;
+	    Equipped ne = ed.real;
 	    if(ne == null) {
 		creat: {
-		    for(Equ equ : this.equ) {
+		    for(Equipped equ : this.equ) {
 			if(equ.desc.equals(ed)) {
 			    ne = equ;
 			    break creat;
-			} else if((equ instanceof SpriteEqu) && (((SpriteEqu)equ).r instanceof Sprite.CUpd) && equ.desc.equals2(ed)) {
-			    /* XXX: This is impure and ugly, but fixing it
-			     * properly would seem to be significantly more
-			     * complex for what is probably little benefit. */
+			} else if((equ.spr instanceof Sprite.CUpd) && equ.desc.equals2(ed)) {
 			    if(!ed.res.sdt.equals(equ.desc.res.sdt)) {
-				((Sprite.CUpd)((SpriteEqu)equ).r).update(ed.res.sdt.clone());
+				((Sprite.CUpd)equ.spr).update(ed.res.sdt.clone());
 				equ.desc.res.sdt = ed.res.sdt;
 			    }
 			    ne = equ;
@@ -478,8 +457,7 @@ public class Composited implements RenderTree.Node, EquipTarget {
 			}
 		    }
 		    switch(ed.t) {
-		    case 0: ne = new SpriteEqu(ed); break;
-		    case 1: ne = new LightEqu(ed); break;
+		    case 0: ne = new Equipped(ed); break;
 		    default: throw(new RuntimeException("Invalid composite equ-type: " + ed.t));
 		    }
 		}
@@ -505,8 +483,8 @@ public class Composited implements RenderTree.Node, EquipTarget {
 		    Model mod = (Model)node;
 		    if(mod.id >= 0)
 			id = 0x01000000 | ((mod.id & 0xff) << 8);
-		} else if(node instanceof Equ) {
-		    Equ equ = (Equ)node;
+		} else if(node instanceof Equipped) {
+		    Equipped equ = (Equipped)node;
 		    if(equ.id >= 0)
 			id = 0x02000000 | ((equ.id & 0xff) << 16);
 		} else if(node instanceof FastMesh.ResourceMesh) {
@@ -533,8 +511,8 @@ public class Composited implements RenderTree.Node, EquipTarget {
     private void parts(RenderTree.Slot slot) {
 	for(Model mod : this.mod)
 	    slot.add(mod);
-	for(Equ equ : this.equ)
-	    slot.add(equ);
+	for(Equipped equ : this.equ)
+	    slot.add(equ.n);
 	// slot.add(pose.new Debug());
     }
 
@@ -558,12 +536,12 @@ public class Composited implements RenderTree.Node, EquipTarget {
     public void tick(double dt) {
 	if(poses != null)
 	    poses.tick((float)dt);
-	for(Equ equ : this.equ)
+	for(Equipped equ : this.equ)
 	    equ.tick(dt);
     }
 
     public void gtick(Render g) {
-	for(Equ equ : this.equ)
+	for(Equipped equ : this.equ)
 	    equ.gtick(g);
     }
 
@@ -579,7 +557,7 @@ public class Composited implements RenderTree.Node, EquipTarget {
     public void chequ(List<ED> equ) {
 	if(equ.equals(cequ))
 	    return;
-	Collection<Equ> pequ = this.equ;
+	Collection<Equipped> pequ = this.equ;
 	this.equ = nequ(equ);
 	RUtils.readd(slots, this::parts, () -> {this.equ = pequ;});
 	cequ = new ArrayList<ED>(equ);
